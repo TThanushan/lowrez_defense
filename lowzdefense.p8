@@ -9,7 +9,7 @@ local mode,game_objects,part,shkx, shky,whiteframe,spawner,camera_offset,
 do_once ,left_click_once_timer, modx, mody, button_line = 'start',{},{},
  0 ,0, false,nil,0, false,0,0,0,0
 
-local debugmode = false
+local debugmode = true
 local main_camera,mouse,turret,enemy_tower
 
 local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=15, alivee=0, enemy_limit = 20}}
@@ -1124,8 +1124,20 @@ function distance(current, target, yaxis)
  return sqrt((x1 - x0)^2+(y1 - y0)^2)*100
 end
 
--- function fast_distance(current, target, yaxis)
+-- function distance(current, target)
+--  local x0, y0, x1, y1 = current.x/100, current.y/100, target.x/100, current.y/100
+--  local current = {x = x0, y = y0}
+--  local target = {x = x1, y = y1}
+--  -- if target == nil then return nil end
+--  return sqrt(fast_distance(current, target))
+-- end
 
+-- function distance(current, target)
+--  local x0, y0, x1, y1 = current.x/100, current.y/100, target.x/100, current.y/100
+--  local current = {x = x0, y = y0}
+--  local target = {x = x1, y = y1}
+
+--  return ((target.x - current.x)^2 + (target.y - current.y)^2)*100
 -- end
 
 function move_toward(current, target, move_speed)
