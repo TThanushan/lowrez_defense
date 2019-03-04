@@ -1,16 +1,14 @@
 pico-8 cartridge // http://www.pico-8.com
 version 15
 __lua__
+
 -- lowrez defense
 -- by wombart
 
 local mode,game_objects,part,shkx, shky,whiteframe,spawner,camera_offset,
 do_once ,left_click_once_timer, modx, mody, button_line, enemies, allies =  'start',{},{},
  0 ,0, false,nil,0, false,0,0,0,0,{},{}
- 
-local camx=64
-local camy=64
-local debugmode = true
+
 local main_camera,mouse,turret,enemy_tower
 
 
@@ -22,7 +20,7 @@ function _init()
 
 end
 
-function _update()
+function _update60()
 
  if mode == 'start' then
   update_start()
@@ -38,31 +36,16 @@ end
 
 
 function _draw()
-    if mode == 'start' then
-        draw_start()
-    elseif mode=='game' then
-        draw_game()
-    elseif mode=='gameover' then
-        draw_gameover()
-    elseif mode=='victory' then
-        draw_victory()
-    end
+ if mode == 'start' then
+  draw_start()
+ elseif mode=='game' then
+  draw_game()
+ elseif mode=='gameover' then
+  draw_gameover()
+ elseif mode=='victory' then
+  draw_victory()
+ end
 
-    if (debugmode) then
-        -- print('fps:'..stat(7),main_camera.x+ 0, 11+main_camera.y, 11, 3)
-        print('object:'..#game_objects,main_camera.x+ 0, 20+main_camera.y, 8, 2)
-        -- print('#enenmies:'..#enemies,main_camera.x+ 0, main_camera.y, 8, 2)
-        -- print('time:'..flr(time()/2),main_camera.x-64, main_camera.y-64, 8, 2)
-        print('e:'..spawner.alivee,main_camera.x-30, 30 +main_camera.y, 8, 2)
-
-        print('mem_use:'..stat(0),main_camera.x+ 0, 30+main_camera.y, 8, 2)
-        print('all_cpu:'..stat(1),main_camera.x+ 0, 40+main_camera.y, 9, 4)
-        -- print('particles:'..#part,main_camera.x+ 0, 50+main_camera.y, 8, 2)
-        -- spe_print('sys_cpu:'..stat(2),main_camera.x+ 0, 50+main_camera.y, 8, 2)
-
-        -- spe_print(main_camera.x, main_camera.x, main_camera.y, 8, 2)
-        -- spe_print(main_camera.y, main_camera.x, main_camera.y, 8, 2)
-    end
 
 end
 
@@ -94,11 +77,11 @@ function init_all_gameobject()
 -- line 1
  make_button(-30, 23, 3, {91}, 100,'button_unit6', 1)
  make_button(-10, 23, 3, {92}, 150,'button_unit7', 1)
- make_button(10, 23, 3,{93}, 175,'button_unit8', 1)
+ make_button(10, 23, 3,{93}, 100,'button_unit8', 1)
  make_button(-30, 23, 3, {94, 78}, 50,'button_manaregen', 2)
  make_button(-13, 23, 3,{95, 79}, 50,'button_manamax', 2)
  make_button(5, 23, 3, {85, 69}, 100,'button_lesscooldown', 2)
- make_button(20, -30, 60, {77}, 0,'button_meteor', 666)
+ make_button(20, -30, 60, {77}, 0,'button_meteor', 0)
  -- make_button(10, 23, 3, 93, 100,'button_manamax', 1)
  -- make_button(-20, 23, 5,87, 20,'button_unit2', 1)
  -- make_button(-9, 23, 12,88, 35,'button_unit3', 1)
@@ -107,14 +90,14 @@ function init_all_gameobject()
  make_change_button_line(23, 15, 115, -1)
  make_change_button_line(23, 22, 116, 1)
 
- main_camera = make_gameobject(32, 32, 'camera', {newposition = {x=0, y=0}})
+ make_gameobject(32, 32, 'camera', {newposition = {x=0, y=0}})
  make_gameobject(0, 32, 'mouse', {newposition = {x=0, y=0}})
  make_tower(270, 8, 'enemy_tower', 250, {x0=96, y0=0, x1=112-96, y1=32-0})
  make_turret(2, 8, 'ally_turret', {{x0=0, y0=0, x1=16, y1=32}, {x0=0, y0=32, x1=16, y1=32}})
 
  spawner = make_gameobject(0, 0, 'spawner', {
   timer=0,
-  time_between_spawn=10,
+  time_between_spawn=15,
   alivee=0
   })
 
@@ -161,8 +144,6 @@ function whiteframe_update()
 end
 
 function start_game()
- sfx(0)
- music(0, 0, 3)
  init_all_gameobject()
  turret = search_gameobject('ally_turret')
  main_camera = search_gameobject('camera')
@@ -191,20 +172,13 @@ function draw_start()
  -- sspr(0, 64, 96, 55, 15, 2*cos(time()/4))
  -- main_camera = search_gameobject('camera')
  --  init_all_gameobject()
- rectfill(0, 28, 128, 32, 4)
-  pal(13, 6) pal(14, 8)
- if time()*4%1 > 0.5 then
-  sspr(32, 64, 16, 16, 20, 15, 16, 16, true)
- else
-  sspr(48, 64, 16, 16, 20, 15, 16, 16, true)
- end
- pal()
+
  -- draw_map()
- spe_print("lowrez defense", 5, 5+cos(time())*2, 12, 1)
- spe_print("by wombart", 2, 56, 9, 4, true)
+ spe_print("lowrez defense", 5, 10, 12, 1)
+ spe_print("by wombart", 5, 56, 9, 4, true)
  -- draw_all_gameobjects()
   -- draw_part()
- if time()*1%2 > 0.5 then spe_print('press ❎', 14, 40, 11, 3) end
+ if time()*1%2 > 0.5 then spe_print('press ❎ to \n\n   start ', 10, 30, 11, 3) end
 
  -- draw_mouse_cursor()
 end
@@ -241,7 +215,7 @@ function draw_game()
  draw_mouse_cursor()
  -- print(#part, 20, 20, 8)
 
--- print(stat(7)..'/'..#allies+#enemies, mouse.x, mouse.y-8, 0)
+print(spawner.alivee, mouse.x, mouse.y-8, 0)
 
 end
 function update_game()
@@ -255,9 +229,9 @@ function update_game()
  -- modx=shkx+main_camera.x
  -- mody=shky+main_camera.y
 
--- if btnp(0) then main_camera.x -= 1 turret.mana_max = 10000 end
--- if btn(1) then main_camera.x += 1 end
--- if btnp(5) then mana_part(120, 30,  main_camera.x-24, main_camera.y-30, 1,{12}) end
+if btnp(0) then main_camera.x -= 1 turret.mana_max = 10000 end
+if btn(1) then main_camera.x += 1 end
+-- if btnp(5) then sfx(0) mana_part(120, 30,  main_camera.x-24, main_camera.y-30, 1,{12}) end
 end
 
 function update_gameover()
@@ -277,6 +251,7 @@ function draw_gameover()
  if do_once == false then 
   do_once=true
   sfx(19)
+ spe_print('you died !!!', main_camera.x-20, main_camera.y-20-4*(cos(time())), 8, 2)
  -- show_message('you died !!!', main_camera.x-20, main_camera.y-20-4*(cos(time())), 8, 2, 15, 2, 'gameover1', true, false, false , 7)
  -- show_message('your score is '..flr(player.score), main_camera.x -32, main_camera.y+15, 10, 9, 10, 2, 'gameover2', true)
  -- show_message('press ❎ button \n\n  to restart', main_camera.x-29, main_camera.y + 10, 11, 3, 2, 2, 'gameover3', true, false, false , 7)
@@ -289,7 +264,6 @@ function draw_gameover()
    obj:draw()
   end
  end
-  spe_print('the undead has won...', main_camera.x-20, main_camera.y-20-4*(cos(time())), 8, 2)
  draw_mouse_cursor()
 end
 
@@ -352,9 +326,9 @@ end
 function camera_follow()
  
  if (pget(main_camera.x+30, 30) != 10 or pget(main_camera.x+27, 27) != 10
-  or pget(main_camera.x+27, 33) != 9) and main_camera.x < 270 then main_camera.x += 2 
+  or pget(main_camera.x+27, 33) != 9) and main_camera.x < 270 then main_camera.x += 1 
  elseif (pget(main_camera.x-31, 30)!=10 or pget(main_camera.x-28, 27) != 10 or pget(main_camera.x-28, 33) != 9
-  or pget(main_camera.x-29, 29) != 10 or pget(main_camera.x-29, 30) != 10) and main_camera.x > 15 then main_camera.x -= 2 end
+  or pget(main_camera.x-29, 29) != 10 or pget(main_camera.x-29, 30) != 10) and main_camera.x > 15 then main_camera.x -= 1 end
 
  -- if main_camera.x -stat(32) >= 32 then 
  --  main_camera.x -= 1
@@ -413,15 +387,12 @@ end
 -- ##tower
 function make_tower(x, y, tag, health, sprite)
 
- local new_tower = make_gameobject(x, y, tag,{
+ make_gameobject(x, y, tag,{
   current_health=health,
   max_health=health,
   sprite=sprite,
   show_health=function(self)
    spe_rect(self.x-2+shkx,self.y+35+shky, self.x+17+shkx,self.y+37+shky, self.current_health/self.max_health, 5, 11, 0)
-   -- spe_rect(main_camera.x-self.x-270,main_camera.y-self.y-0,main_camera.x- self.x,main_camera.y-self.y+23, self.current_health/self.max_health, 8, 11, 0)
-   spe_rect(main_camera.x-self.x+270,self.y-8, main_camera.x-self.x+270+31,self.y-8, self.current_health/self.max_health, 8, 11, 12)
-
   end,
   is_alive=function (self)
    if self.current_health <= 0 then
@@ -434,8 +405,8 @@ function make_tower(x, y, tag, health, sprite)
   take_damage=function(self, damage)
    -- whiteframe=true
    self.current_health-= damage
-   -- shake_camera(0.25)
-   if rnd() > 0.5 then make_enemy(flr(rnd(4))) end
+   shake_camera(0.25)
+   make_enemy(flr(rnd(4)))
 
    return true
   end,
@@ -458,8 +429,6 @@ function make_tower(x, y, tag, health, sprite)
    self:is_alive()
   end
   })
-  add(enemies, new_tower)
-  return new_tower
 
 end
 
@@ -498,7 +467,7 @@ end
 -- ##unit
 function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
  spawner.alivee += 1
- local new_unit = make_gameobject(x, y, tag,{
+ local enemy = make_gameobject(x, y, tag,{
   sprite=sprite,
   max_health=health,
   current_health=health,
@@ -508,7 +477,7 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
   side=1,
   take_damage=function(self, damage)
    self.current_health-= damage
-   if self.attack_info.tab == enemies then self.side = -1 end
+   if self.attack_info.target_tag == 'enemy' then self.side = -1 end
    blood_explosion(self:center('x'), self:center('y'), damage, self.side, {8})
 
    -- shake_camera(1)
@@ -516,18 +485,16 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
   end,
   find_target=function(self)
    -- if self:get_target() == nil or self:get_target():is_alive() == false then self.attack_info.target=nil end
-   if self:get_target() and self:get_target():is_alive() == false then self.attack_info.target = nil end
-   -- if self:can_attack() then return end 
    local shortest = 10000
-   for obj in all(self.attack_info.tab) do
-    if obj:is_alive() then
+   for obj in all(game_objects) do
+    if sub(obj:get_tag(),1,#self.attack_info.target_tag)  == self.attack_info.target_tag and obj:is_active() then
      local dist = distance(self, obj, true)
      if dist < shortest then
-      if (self.attack_info.tab == enemies and self.x < obj.x) or
-       (self.attack_info.tab == allies and self.x > obj.x) then
-
+      if (sub(self.attack_info.target_tag,1, 5) == 'enemy' and self.x < obj.x)
+      or (sub(self.attack_info.target_tag,1, 4) == 'ally' and self.x > obj.x) then
        shortest = dist
-       self.attack_info.target = obj
+       -- if shortest < self.attack_info.range then 
+        self.attack_info.target = obj
       end
      end
     end
@@ -536,14 +503,31 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
   kill=function(self)
     self.current_health = 0
     spawner.alivee -=1
+    -- local side = 1
+    blood_part(self:center('x'), self:center('y')+16, 1, {8})
+    -- if self.attack_info.target_tag == 'enemy' then side = -1 end
      blood_explosion(self:center('x'), self:center('y'), 50, self.side, {8})
-     if self.attack_info.tab == allies then
-      local points = self.max_health+self.attack_info.damage + rnd(15)
+-- blood_explosion(x, y, quantity, direction, colarr)
+     if self.attack_info.target_tag == 'ally' then
+      local points = self.max_health + rnd(5)
+      -- turret.mana += flr(points)
+      -- show_message('+'..flr(points)..'$', self.x, self.y, 11, 3, 5, 2, 'score', true, true)
       mana_part(self.x, self.y,  main_camera.x-24, main_camera.y-30, flr(points),{12}) 
      end
      sfx(self.sounds.death +flr(rnd(2)))
+     -- shake_camera(0.5)
+     -- ennemy does damage around him on other enemies
+     local rand = flr(rnd(11))
+     if rand >= 8 then
+      -- shake_camera(10)
+      for obj in all(enemies) do
+       if obj:is_active() and obj:is_alive() and distance(self, obj) < 30 then
 
-     if self.attack_info.tab == enemies then del(allie, self) else del(enemies, self) end
+        obj:take_damage(obj.max_health)
+       end
+      end
+     end
+     self.x, self.y = 130, 130
      self:disable()
   end,
   is_alive=function(self)
@@ -660,36 +644,35 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
   end
   })
 
- if new_unit.attack_info.tab == enemies then add(allies, new_unit) else add(enemies, new_unit) end 
 end
 
 function make_enemy(n)
- -- if spawner.alivee > 20 then return end
+ if spawner.alivee > 20 then return end
  local spawn_posx, spawn_posy = 280, 24+rnd(3)-rnd(3)
  hit_part(spawn_posx+8, spawn_posy+8, {11, 3, 2})
  -- spawner.alivee += 1
  if n == 1 then
- make_unit(spawn_posx, spawn_posy, 'enemy_unit1', 4, 24,
-  {class='melee', tab=allies, target=turret, damage=1, range=16, timer=0, attack_speed=0.5}, {hit=4, death=8},{move={{sx=16, sy=0, sw=16, sh=16},{sx=32, sy=0, sw=16, sh=16}},
+ make_unit(spawn_posx, spawn_posy, 'enemy_unit1', 4, 12,
+  {class='melee', target_tag='ally', target=turret, damage=1, range=16, timer=0, attack_speed=1}, {hit=4, death=8},{move={{sx=16, sy=0, sw=16, sh=16},{sx=32, sy=0, sw=16, sh=16}},
   attack={{sx=46, sy=0, sw=16, sh=16}, {sx=64, sy=0, sw=16, sh=16}}, col1=3, col2=1})
  elseif n == 2 then
-  make_unit(spawn_posx, spawn_posy, 'enemy_unit2', 12, 18,
-   {class='melee', tab=allies, target=turret, damage=0.25, range=16, timer=0, attack_speed=1}, {hit=4, death=8},{move={{sx=16, sy=16, sw=16, sh=16},{sx=32, sy=16, sw=16, sh=16}},
+  make_unit(spawn_posx, spawn_posy, 'enemy_unit2', 12, 9,
+   {class='melee', target_tag='ally', target=turret, damage=0.25, range=16, timer=0, attack_speed=2}, {hit=4, death=8},{move={{sx=16, sy=16, sw=16, sh=16},{sx=32, sy=16, sw=16, sh=16}},
    attack={{sx=46, sy=16, sw=16, sh=16}, {sx=64, sy=16, sw=16, sh=16}}, col1=3, col2=1})
  elseif n == 3 then
-    make_unit(spawn_posx, spawn_posy, 'enemy_unit3', 2, 26, 
-     {class='distance', bullet_info={damage=1, sprite=207, move_speed=600, backoff=0, tag='bullet2'},
-      tab=allies, target=nil, damage=1, range=45, timer=0, attack_speed=1, effect={state=true, col={11, 3}}},
+    make_unit(spawn_posx, spawn_posy, 'enemy_unit3', 2, 13, 
+     {class='distance', bullet_info={damage=1, sprite=207, move_speed=300, backoff=0, tag='bullet2'},
+      target_tag='ally', target=nil, damage=1, range=45, timer=0, attack_speed=2, effect={state=true, col={11, 3}}},
       {hit=13, death=6},{move={{sx=56, sy=96, sw=16, sh=16},{sx=72, sy=96, sw=15, sh=15}},
        attack={{sx=88, sy=96, sw=16, sh=16}, {sx=104, sy=96, sw=16, sh=16}}, col1=3, col2=2})
  elseif n==4 then
- make_unit(spawn_posx, spawn_posy, 'enemy_unit4', 7, 44,
-  {class='melee', tab=allies, target=turret, damage=5, range=16, timer=0, attack_speed=0.25}, {hit=4, death=8},{move={{sx=16, sy=0, sw=16, sh=16},{sx=32, sy=0, sw=16, sh=16}},
+ make_unit(spawn_posx, spawn_posy, 'enemy_unit4', 7, 22,
+  {class='melee', target_tag='ally', target=turret, damage=5, range=16, timer=0, attack_speed=0.5}, {hit=4, death=8},{move={{sx=16, sy=0, sw=16, sh=16},{sx=32, sy=0, sw=16, sh=16}},
   attack={{sx=46, sy=0, sw=16, sh=16}, {sx=64, sy=0, sw=16, sh=16}}, col1=1, col2=8, powered=true})
  elseif n==5 then
-    make_unit(spawn_posx, spawn_posy, 'enemy_unit5', 3, 30, 
-     {class='distance', bullet_info={damage=1, sprite=207, move_speed=600, backoff=0, tag='bullet2'},
-      tab=allies, target=nil, damage=1, range=45, timer=0, attack_speed=0.25, effect={state=true, col={7, 1}}},
+    make_unit(spawn_posx, spawn_posy, 'enemy_unit5', 3, 15, 
+     {class='distance', bullet_info={damage=1, sprite=207, move_speed=300, backoff=0, tag='bullet2'},
+      target_tag='ally', target=nil, damage=1, range=45, timer=0, attack_speed=0.5, effect={state=true, col={7, 1}}},
       {hit=13, death=6},{move={{sx=56, sy=96, sw=16, sh=16},{sx=72, sy=96, sw=15, sh=15}},
        attack={{sx=88, sy=96, sw=16, sh=16}, {sx=104, sy=96, sw=16, sh=16}}, col1=10, col2=1, powered=true})
  end
@@ -710,12 +693,11 @@ function meteor_ability()
  for i=-2, 10 do
 
   make_gameobject(i*20+rnd(5), -rnd(30)-10, 'meteor', {
-   speed=20+rnd(15),
+   speed=10+rnd(15),
    damage=5,
    size=rnd()+2,
    kill=function(self)
     self:disable() 
-    hit_part(self.x, self.y, {10, 9, 2})
     sfx(-1, 0)
    end,
    update=function(self)
@@ -725,9 +707,9 @@ function meteor_ability()
     self.x += self.speed/25
     self.y += self.speed/25
     local shortest = 10000
-    for obj in all(enemies) do
+    for obj in all(game_objects) do
 
-     if obj:is_alive() then
+     if sub(obj:get_tag(),1,5)  == 'enemy' and obj:is_active() then
       local dist = distance(self, obj, true)
        if dist < 10 then 
         obj:take_damage(self.damage)
@@ -768,62 +750,62 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
    hit_part(posx+4, posy+8, {7, 6, 5, 1})
    if sub(self.tag, 8, 13) == 'unit1' then
     sfx(12)
-    make_unit(posx, posy+pr, 'ally_unit1', 4, 24, 
-     {class='melee', tab=enemies, target=nil, damage=1, range=16, timer=0, attack_speed=0.5},
+    make_unit(posx, posy+pr, 'ally_unit1', 4, 12, 
+     {class='melee', target_tag='enemy', target=nil, damage=1, range=16, timer=0, attack_speed=1},
       {hit=5, death=6},{move={{sx=32, sy=64, sw=16, sh=16},{sx=48, sy=64, sw=16, sh=16}},
        attack={{sx=64, sy=64, sw=16, sh=16}, {sx=80, sy=64, sw=16, sh=16}}, col1=8, col2=6})
     enemy_repost(1)
    elseif sub(self.tag, 8, 13) == 'unit2' then
     sfx(12)
-    make_unit(posx, posy+pr, 'ally_unit2', 2, 24, 
+    make_unit(posx, posy+pr, 'ally_unit2', 2, 12, 
      {class='distance', bullet_info={damage=2, sprite=47, move_speed=300, backoff=0, tag='bullet3'},
-      tab=enemies, target=nil, damage=1, range=45, timer=0, attack_speed=1},
+      target_tag='enemy', target=nil, damage=1, range=45, timer=0, attack_speed=2},
       {hit=5, death=6},{move={{sx=32, sy=80, sw=16, sh=16},{sx=48, sy=80, sw=16, sh=16}},
        attack={{sx=64, sy=80, sw=16, sh=16}, {sx=80, sy=80, sw=16, sh=16}}, col1=11, col2=3})
     enemy_repost(2)
    elseif sub(self.tag, 8, 13) == 'unit3' then
     sfx(12)
-    make_unit(posx, posy+pr, 'ally_unit3', 20, 18, 
-     {class='melee', tab=enemies, target=nil, damage=3, range=16, timer=0, attack_speed=1},
+    make_unit(posx, posy+pr, 'ally_unit3', 20, 9, 
+     {class='melee', target_tag='enemy', target=nil, damage=3, range=16, timer=0, attack_speed=2},
       {hit=5, death=6},{move={{sx=48, sy=48, sw=16, sh=16},{sx=64, sy=48, sw=16, sh=16}},
        attack={{sx=80, sy=48, sw=16, sh=16}, {sx=96, sy=48, sw=16, sh=16}}, col1=1, col2=6})
     enemy_repost(3)
    elseif sub(self.tag, 8, 13) == 'unit4' then
     sfx(20)
-    make_unit(posx, posy+pr, 'ally_unit4', 16, 32, 
-     {class='melee', tab=enemies, target=nil, damage=2, range=16, timer=0, attack_speed=0.25 },
+    make_unit(posx, posy+pr, 'ally_unit4', 16, 16, 
+     {class='melee', target_tag='enemy', target=nil, damage=2, range=16, timer=0, attack_speed=0.5 },
       {hit=5, death=6},{move={{sx=32, sy=64, sw=16, sh=16},{sx=48, sy=64, sw=16, sh=16}},
        attack={{sx=64, sy=64, sw=16, sh=16}, {sx=80, sy=64, sw=16, sh=16}}, col1=12, col2=1, powered=true})
     enemy_repost(4)
    elseif sub(self.tag, 8, 13) == 'unit5' then
    sfx(20)
-    make_unit(posx, posy+pr, 'ally_unit5', 6, 24, 
-     {class='distance', bullet_info={damage=1, sprite=63, move_speed=600, backoff=0, tag='bullet4', powered=true},
-      tab=enemies, target=nil, damage=1, range=45, timer=0, attack_speed=0.25},
+    make_unit(posx, posy+pr, 'ally_unit5', 6, 12, 
+     {class='distance', bullet_info={damage=1, sprite=63, move_speed=300, backoff=0, tag='bullet4', powered=true},
+      target_tag='enemy', target=nil, damage=1, range=45, timer=0, attack_speed=0.5},
       {hit=5, death=6},{move={{sx=32, sy=80, sw=16, sh=16},{sx=48, sy=80, sw=16, sh=16}},
        attack={{sx=64, sy=80, sw=16, sh=16}, {sx=80, sy=80, sw=16, sh=16}}, col1=9, col2=2, powered=true})
     enemy_repost(5)
    elseif sub(self.tag, 8, 13) == 'unit6' then
    sfx(20)
-    make_unit(posx, posy+pr, 'ally_unit6', 48, 18, 
-     {class='melee', tab=enemies, target=nil, damage=6, range=16, timer=0, attack_speed=0.5},
+    make_unit(posx, posy+pr, 'ally_unit6', 48, 9, 
+     {class='melee', target_tag='enemy', target=nil, damage=6, range=16, timer=0, attack_speed=2},
       {hit=5, death=6},{move={{sx=48, sy=48, sw=16, sh=16},{sx=64, sy=48, sw=16, sh=16}},
        attack={{sx=80, sy=48, sw=16, sh=16}, {sx=96, sy=48, sw=16, sh=16}}, col1=10,col2=1, powered=true})
     enemy_repost(4)
     enemy_repost(5)
    elseif sub(self.tag, 8, 13) == 'unit7' then
    sfx(20)
-    make_unit(posx, posy+pr, 'ally_unit7', 32, 24, 
-     {class='distance', bullet_info={damage=6, sprite=223, move_speed=200, backoff=0, tag='bullet5', powered=true},
-      tab=enemies, target=nil, damage=1, range=75, timer=0, attack_speed=2},
+    make_unit(posx, posy+pr, 'ally_unit7', 32, 12, 
+     {class='distance', bullet_info={damage=6, sprite=223, move_speed=100, backoff=0, tag='bullet5', powered=true},
+      target_tag='enemy', target=nil, damage=1, range=45, timer=0, attack_speed=2},
       {hit=5, death=6},{move={{sx=56, sy=112, sw=16, sh=16},{sx=72, sy=112, sw=16, sh=16}},
        attack={{sx=88, sy=112, sw=16, sh=16}, {sx=104, sy=112, sw=16, sh=16}}, col1=7, col2=6, powered=true})
     enemy_repost(4)
     enemy_repost(5)
    elseif sub(self.tag, 8, 13) == 'unit8' then
    sfx(20)
-    make_unit(posx, posy+pr, 'ally_unit8', 8, 128, 
-     {class='melee', tab=enemies, target=nil, damage=6, range=16, timer=0, attack_speed=0.125 },
+    make_unit(posx, posy+pr, 'ally_unit8', 8, 64, 
+     {class='melee', target_tag='enemy', target=nil, damage=6, range=16, timer=0, attack_speed=0.25 },
       {hit=5, death=6},{move={{sx=32, sy=64, sw=16, sh=16},{sx=48, sy=64, sw=16, sh=16}},
        attack={{sx=64, sy=64, sw=16, sh=16}, {sx=80, sy=64, sw=16, sh=16}}, col1=10, col2=8, powered=true})
     enemy_repost(4)
@@ -841,9 +823,8 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
      if sub(obj:get_tag(), 0, 6) == 'button' and obj:get_tag() != 'button_meteor' and obj.max_cooldown > 0.5 then obj.current_cooldown *=0.5 obj.max_cooldown *= 0.5  end
      -- if obj:get_tag()== 'button_lesscooldown' then obj.current_cooldown *=0.5 obj.max_cooldown *= 0.5  end
     end
-    self.price += 50
    elseif sub(self.tag, 8, 14) == 'meteor' then
-    -- sfx(11)
+    sfx(11)
     meteor_ability()
    end
 
@@ -857,17 +838,18 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
    else return false end
   end,
   update=function(self)
-   if self.button_l != 666 and (self.button_l != button_line or (self.tag =='button_lesscooldown' and self.price >= 250)) then return end
+   if self.button_l != button_line or (self.tag =='button_lesscooldown' and self.price >= 150) then return end
 
-   if self.current_cooldown <= 0 then self.current_cooldown = 0 else self.current_cooldown -= 1/30 end
+   if self.current_cooldown <= 0 then self.current_cooldown = 0 else self.current_cooldown -= 1/60 end
 
+   if self.button_l != button_line then return end
    if self.current_cooldown <= 0 and turret.mana >= self.price and self:is_mouse_over() and is_mouse_left_click_once() then
     turret.mana -= self.price
     self:action()
    end
   end,
   draw=function(self)
-   if self.button_l != 666 and (self.button_l != button_line or (self.tag =='button_lesscooldown' and self.price >= 250)) then return end
+   if self.button_l != button_line or (self.tag =='button_lesscooldown' and self.price >= 150) then return end
 
 
    local pc = self.current_cooldown/self.max_cooldown
@@ -925,7 +907,7 @@ end
 
 -- ##turret
 function make_turret(x, y, tag,sprite)
- local new_turret= make_gameobject(x, y, tag, {
+ return make_gameobject(x, y, tag, {
   sprite=sprite,
   max_health=250,
   current_health=250,
@@ -942,8 +924,6 @@ function make_turret(x, y, tag,sprite)
    -- spe_print(self.current_health,self.x+4, self.y-10, in_col, out_col)
    spe_rect(self.x-3,self.y+35, self.x+16,self.y+36, self.current_health/self.max_health, 8, 11, 0)
 
-   spe_rect(main_camera.x-self.x-30,main_camera.y-self.y-24,main_camera.x- self.x,main_camera.y-self.y-24, self.current_health/self.max_health, 8, 11, 12)
-
   end,
 
   take_damage=function(self, damage)
@@ -953,12 +933,10 @@ function make_turret(x, y, tag,sprite)
    return true
   end,
   find_target=function(self)
-    if self:get_target() and self:get_target():is_alive() == false then self.attack_info.target = nil end
-
    local shortest = 10000
-   for obj in all(enemies) do
+   for obj in all(game_objects) do
 
-    if obj:is_alive() then
+    if sub(obj:get_tag(),1,5)  == 'enemy' and obj:is_active() then
      local dist = distance(self, obj)
      if dist < shortest then
       shortest = dist
@@ -1010,7 +988,7 @@ function make_turret(x, y, tag,sprite)
   end,
   show_mana=function(self)
    if self.mana >= self.mana_max and time()*2%2 >= 1 then pal(12, 1)  end
-   spe_print(flr(self.mana)..'/'..flr(self.mana_max)..'●', main_camera.x-30, main_camera.y-29, self.mana_tcol, 1)
+   spe_print(flr(self.mana)..'/'..flr(self.mana_max)..'●', main_camera.x-30, main_camera.y-30, self.mana_tcol, 1)
    pal()
    -- if self.mana_tcol == 7 then self.mana_tcol = 12 end
   end,
@@ -1070,9 +1048,6 @@ function make_turret(x, y, tag,sprite)
   end
 
   })
-  
-  add(allies, new_turret)
-  return new_turret
 
 end
 
@@ -1113,7 +1088,7 @@ function make_bullet(x, y, damage, backoff, move_speed, sprite, target, tag, pow
   end,
   explode=function(self)
     hit_part(self:center('x'),self:center(' y'),{7, 6, 5})
-    sfx(0) 
+     if self.target:get_tag()!='player' then sfx(0) end
   end,
   set_target=function(self, target)
    self.target = target
@@ -1194,6 +1169,14 @@ end
 -- ##make_gameobject
 function make_gameobject(x, y, tag, properties)
 
+ for obj in all(game_objects) do
+  if obj:get_tag() == tag and obj:is_active() == false then
+   obj:set_value(x, y, tag)
+   obj:reset()
+   return obj
+  end
+ end 
+
  local obj = {
   x=x,
   y=y,
@@ -1242,13 +1225,13 @@ end
 -- ##part
 function add_part(x, y ,tpe, size, mage, dx, dy, colarr)
 
- -- for obj in all(game_objects) do
- --  if(obj:is_active() == false and obj:get_tag() == tag) then
- --   obj:set_value(x,y,tag)
- --   obj:reset()
- --   return obj
- --  end
- -- end
+ for obj in all(game_objects) do
+  if(obj:is_active() == false and obj:get_tag() == tag) then
+   obj:set_value(x,y,tag)
+   obj:reset()
+   return obj
+  end
+ end
 
 
  local p = {
@@ -1331,7 +1314,7 @@ end
 
 function blood_explosion(x, y, quantity, direction, colarr)
   for i=0, quantity do
-  add_part(rnd(2)-rnd(2)+x, rnd(2)-rnd(2)+y, 13, 1, 100, ((rnd(8)+2)*direction)/2, -rnd(1.5), colarr)
+  add_part(rnd(2)-rnd(2)+x, rnd(2)-rnd(2)+y, 13, 1, 100, ((rnd(4)+1)*direction)/2, -rnd(1.5), colarr)
   -- add_part(x, y ,tpe, size, mage, dx, dy, colarr)
  end
 end
@@ -1386,7 +1369,7 @@ function draw_part()
    if p.y >= 38  then 
     p.dx, p.dy = 0, 0 
    else
-    p.dy+=0.2
+    p.dy+=0.1
    end
   elseif p.tpe==14 then
    -- pset(p.x+shkx, p.y+shky, p.col)
@@ -1439,7 +1422,7 @@ function spe_print(text, x, y, col_in, col_out, bordercol)
  if bordercol != nil then outlinecol = bordercol end
  if bordercol != 16 then
   -- draw outline color.
-  print(text, x-1+shkx, y+shky, outlinecol) 
+  print(text, x-1+shkx, y+shky, outlinecol)
   print(text, x+1+shkx, y+shky, outlinecol)
   print(text, x+1+shkx, y-1+shky, outlinecol)
   print(text, x-1+shkx, y-1+shky, outlinecol)
@@ -1484,6 +1467,70 @@ if abs(shky)<0.1 then
  end
 
 end
+
+-- -- ##show_message
+-- function show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_time, tag, moving, blink, ui_state, bordercol)
+--  local col1, col2 = 7, 6
+--  local msg = make_gameobject(_x, _y, tag, {
+--   text=_text, 
+--   in_color = _in_color,
+--   out_color = _out_color, 
+--   speed = _speed,
+--   moving_speed=3,
+--   blink=blink,
+--   display_time = time()+_display_time,
+--   reset=function(self)
+--    self:enable()
+--    self.timer = 0
+--    self.moving_speed=4
+--   end,
+--   set_properties=function(self, text, x, y, in_color, out_color, speed, display_time)
+--    self.text=text
+--    self.x=x
+--    self.y=y
+--    self.in_color=in_color
+--    self.out_color=out_color
+--    self.speed=speed
+--    self.display_time=time()+display_time
+--    self:reset()
+--   end,
+--   update=function(self)
+
+--    if moving then self.y -= self.moving_speed 
+--     if(self.moving_speed>=0.1) then self.moving_speed*=0.8 
+--     end
+--    end
+--    if(time()>= self.display_time) then 
+--     self:reset()
+--     self:disable()
+--    end
+--   end,
+--   blink_color=function(self)
+--    if(self.blink and time()*self.speed%4 >= 2) then return true else return false end
+--   end,
+--   draw=function(self)
+--    if ui_state then 
+--     if(self:blink_color()) then
+--     spe_print(self.text, self.x, self.y, col1, col2, true, bordercol)
+--     else
+--     spe_print(self.text, self.x, self.y, _in_color, _out_color, true, bordercol)
+--     end
+
+--    else
+--     if(self:blink_color()) then
+--     spe_print(self.text, self.x, self.y, col1, col2, bordercol)
+--     else
+--     spe_print(self.text, self.x, self.y, _in_color, _out_color, bordercol)
+--     end
+--    end
+--   end
+--   })
+--  if msg != nil then
+--   msg:set_properties(_text, _x, _y, _in_color, _out_color, _speed, _display_time)
+--   return msg
+--  end
+
+--  end
 
 
 __gfx__
@@ -1615,136 +1662,6 @@ ccc1111cccc1111c0000000000000000000000000000000000007000000000000000000777000000
 00000000000000000000000000000000011cccc1111ccc00000000000000400eeeeeedee0000400000eddee004000eeeeedddeeea200000aaaaaeeee00000000
 000000000000000000000000000000001cc1111cccc11110000000000000040eeddddeee00004000deeeede000000eddddeeeeeeaaa00a0aaaaaaaee00000000
 00000000000000000000000000000000ccc1111cccc1111c00000000000004eeeeeeeeee00000400eedddeee000eeeeeeeeeeeeeaaa00aaaaaaaaaee00000000
-__label__
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbccbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbccbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-cc000000000000000000cc0000000000000000000000cc0000000000ccccccccccccccccccccccccccccccccccccccccccccccccbbbbbbbbbbbbbbbbcccccccc
-cc000000000000000000cc0000000000000000000000cc0000000000ccccccccccccccccccccccccccccccccccccccccccccccccbbbbbbbbbbbbbbbbcccccccc
-cc00cccccc00cccccc000000cc00cccccc00cccccc000000cccccc0000ccccccccccccccccccccccccccccccccccccccccccccccbbaaaaaaccccccbbcccccccc
-cc00cccccc00cccccc000000cc00cccccc00cccccc000000cccccc0000ccccccccccccccccccccccccccccccccccccccccccccccbbaaaaaaccccccbbcccccccc
-cc001111cc00cc11cc0000cc1100cc111100cc11cc0000cccccc11cc00ccccccccccccaaaaaaaaaaaaaaaaaaaaaaccccccccccccbbaaaa9999ccccbbcccccccc
-cc001111cc00cc11cc0000cc1100cc111100cc11cc0000cccccc11cc00ccccccccccccaaaaaaaaaaaaaaaaaaaaaaccccccccccccbbaaaa9999ccccbbcccccccc
-cc00cccccc00cc00cc0000cc0000cccccc00cc00cc0000cccccccccc00ccccccccaaaaaaaaaaaaaaaaaaaabbbbbbbbccccccccccbbaa99999988ccbbaaaaaaaa
-cc00cccccc00cc00cc0000cc0000cccccc00cc00cc0000cccccccccc00ccccccccaaaaaaaaaaaaaaaaaaaabbbbbbbbccccccccccbbaa99999988ccbbaaaaaaaa
-cc00cc111100cc00cc0000cc00001111cc00cc00cc0000cccccccccc00ccccccaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccbbcc9988222222bbaaaabbbb
-cc00cc111100cc00cc0000cc00001111cc00cc00cc0000cccccccccc00ccccccaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccbbcc9988222222bbaaaabbbb
-aa00cccccc00cccccc00cc110000cccccc00cccccc000011cccccc1100ccccaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbb33ccaabbcccc88222222bbbbbbbbbb
-aa00cccccc00cccccc00cc110000cccccc00cccccc000011cccccc1100ccccaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbb33ccaabbcccc88222222bbbbbbbbbb
-aa00111111001111110011000000111111001111110000001111110000ccaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb33aaaabbcccccc222222bbbbbbbbbb
-aa00111111001111110011000000111111001111110000001111110000ccaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb33aaaabbcccccc222222bbbbbbbbbb
-aa0000000000000000000000aa000000000000000000bb0000000000bbaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb33aaaaaabbbbbbbbbbbbbbbbbbbbbbbb
-aa0000000000000000000000aa000000000000000000bb0000000000bbaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb33aaaaaabbbbbbbbbbbbbbbbbbbbbbbb
-bbbb001100bbbbbbbb009999990000ff00aabbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbb
-bbbb001100bbbbbbbb009999990000ff00aabbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbb
-bbbb0011cc00bbbbbb00ff44ff00ff00aabbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbb
-bbbb0011cc00bbbbbb00ff44ff00ff00aabbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbb
-bbbb00111100bbbbbb00ff444400ff00bbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbb33aaaaaaaabbbbbbbbbbbbbbbbbbbbbbbb
-bbbb00111100bbbbbb00ff444400ff00bbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbb33aaaaaaaabbbbbbbbbbbbbbbbbbbbbbbb
-bbbb00111100bbbb00888888aaff0000bbbbbbbbbbbbbbbbbbbbbbbbaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbb00111100bbbb00888888aaff0000bbbbbbbbbbbbbbbbbbbbbbbbaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbb0011cc00bb0088888888aa00001100bbbbbbbbbbbbbbbbbbbbbbaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbb33aaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbb0011cc00bb0088888888aa00001100bbbbbbbbbbbbbbbbbbbbbbaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbb33aaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbb0011cc00008888888899aa11111100bbbbbbbbbbbbbbbbbbbbbbaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbb33aaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbb0011cc00008888888899aa11111100bbbbbbbbbbbbbbbbbbbbbbaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbb33aaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbb001111000088888888aaaa11cccc00bbbbbbbbbbbbbbbbbbbbbbaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb333333aaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbb001111000088888888aaaa11cccc00bbbbbbbbbbbbbbbbbbbbbbaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb333333aaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbb001111008888888899aaaa11cccc00bbbbbbbbbbbbbbbbbbbb33aaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb333333aaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb33
-bbbb001111008888888899aaaa11cccc00bbbbbbbbbbbbbbbbbbbb33aaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb333333aaaaaabbbbbbbbbbbbbbbbbbbbbbbbbb33
-bbbb0011cc0011cccc88aacccc11111100bbbbbbbbbbbbbbbbbbbb3333aabbbbbbbbbbbbbbbbbb3333333333333333aaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb33
-bbbb0011cc0011cccc88aacccc11111100bbbbbbbbbbbbbbbbbbbb3333aabbbbbbbbbbbbbbbbbb3333333333333333aaaabbbbbbbbbbbbbbbbbbbbbbbbbbbb33
-bbbb0011cc11111111cccccccc11111100bbbbbbbbbbbbbbbb33333333bbbbbbbbbbbbbbbb3333333333333333333333aabbbbbbbbbbbbbbbbbb333333333333
-bbbb0011cc11111111cccccccc11111100bbbbbbbbbbbbbbbb33333333bbbbbbbbbbbbbbbb3333333333333333333333aabbbbbbbbbbbbbbbbbb333333333333
-bbbb001111cccccccc11111111cccccc00bbbbbbbbbbbbbbbb33333333bbbbbbbbbbbbbb333333333333333333333333bbbbbbbbbbbbbbbb3333333333333333
-bbbb001111cccccccc11111111cccccc00bbbbbbbbbbbbbbbb33333333bbbbbbbbbbbbbb333333333333333333333333bbbbbbbbbbbbbbbb3333333333333333
-bbbb00111177cccccc11111111cc77cc00bbbbbb33333333333333333333333333333333333333333333333333333333bbbbbbbbbbbbbb333333333333333333
-bbbb00111177cccccc11111111cc77cc00bbbbbb33333333333333333333333333333333333333333333333333333333bbbbbbbbbbbbbb333333333333333333
-33330011cc77777711cccccc7777771100bb33333333333333333333333333333333333333333333333333333333333333223333333333333333333333333333
-33330011cc77777711cccccc7777771100bb33333333333333333333333333333333333333333333333333333333333333223333333333333333333333333333
-33330011cc6688887777777722226611002233333333333333333333333333112233333333333333333333333333332222223333333333333333333333333333
-33330011cc6688887777777722226611002233333333333333333333333333112233333333333333333333333333332222223333333333333333333333333333
-332200111166888888882222222266cc002222333333333333333333333333112233333333333333333333333333112222221122333333333333333333333333
-332200111166888888882222222266cc002222333333333333333333333333112233333333333333333333333333112222221122333333333333333333333333
-332200111166888888882222222266cc002233333333333333333333333322112222221133333333222211332222112222221122333333333333333333333333
-332200111166888888882222222266cc002233333333333333333333333322112222221133333333222211332222112222221122333333333333333333333333
-33220011006688888888222222226611002233333333333333333333222222112222221122112222222211222222112222221122222211333333330022113322
-33220011006688888888222222226611002233333333333333333333222222112222221122112222222211222222112222221122222211333333330022113322
-33330000aa008888888822222222661100333333333333333333331122222211222222112211222222221122222211222222112222221122112200aa00112222
-33330000aa008888888822222222661100333333333333333333331122222211222222112211222222221122222211222222112222221122112200aa00112222
-333300aaaa00888888882222222266cc00333333332222113322221122222211222222112211222222221122222211222222112222221122112200aaaa002222
-333300aaaa00888888882222222266cc00333333332222113322221122222211222222112211222222221122222211222222112222221122112200aaaa002222
-1100aaaaaa00888888882222222266cc00221122222222112222221122222211222222112211222222221122222211222222112222221122112200aaaaaa0022
-1100aaaaaa00888888882222222266cc00221122222222112222221122222211222222112211222222221122222211222222112222221122112200aaaaaa0022
-00aaaaaaaa008888888822222222661100221122222222112222221122222211222222112211222222221122222211222222112222221122112200aaaaaaaa00
-00aaaaaaaa008888888822222222661100221122222222112222221122222211222222112211222222221122222211222222112222221122112200aaaaaaaa00
-11009999aa006688888822222266111155001122222222112222221122222222222222222222222222222222222222222222112222221122112200aa99990022
-11009999aa006688888822222266111155001122222222112222221122222222222222222222222222222222222222222222112222221122112200aa99990022
-1122009999006688888822222266cccc55770022222222112222226666666644444444444444444444444444444466666666444444444444444400999900bb44
-1122009999006688888822222266cccc55770022222222112222226666666644444444444444444444444444444466666666444444444444444400999900bb44
-112200009900cc668888222266cccccc5577002222222211222266666655555544444444444444444444444444666666555555444444444444440099004444bb
-112200009900cc668888222266cccccc5577002222222211222266666655555544444444444444444444444444666666555555444444444444440099004444bb
-444400110011116688882222661111115500444444444444444466555555555544444444444444444444444444665555555555444444444444444400bb444433
-444400110011116688882222661111115500444444444444444466555555555544444444444444444444444444665555555555444444444444444400bb444433
-44440011cc11111166882266cc111111004444444444444444444444444444444444444444444444444444444444444444444444444444444444444444bb4444
-44440011cc11111166882266cc111111004444444444444444444444444444444444444444444444444444444444444444444444444444444444444444bb4444
-4444001111cccccccc66661111cccccc004444444422444444444444442244444444444444224444444444444422444444444444442244444444444444334444
-4444001111cccccccc66661111cccccc004444444422444444444444442244444444444444224444444444444422444444444444442244444444444444334444
-2222001111cccccccc11111111cccccc002222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222
-2222001111cccccccc11111111cccccc002222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222
-440011cccc11111111cccccccc111111110022442222222244222244222222224422224422222222442222442222222244222244222222224422224422222222
-440011cccc11111111cccccccc111111110022442222222244222244222222224422224422222222442222442222222244222244222222224422224422222222
-2200cccccc11111111cccccccc11111111cc00222222222222442222222222222244222222222222224422222222222222442222222222222244222222222222
-2200cccccc11111111cccccccc11111111cc00222222222222442222222222222244222222222222224422222222222222442222222222222244222222222222
-22220000000000000000000000000000000044222222222222224422222222222222442222222222222244222222222222224422222222222222442222222222
-22220000000000000000000000000000000044222222222222224422222222222222442222222222222244222222222222224422222222222222442222222222
-44222222222222222222222222222222222222442222222244222244222222224422224422222222442222442222222244222244222222224422224422222222
-44222222222222222222222222222222222222442222222244222244222222224422224422222222442222442222222244222244222222224422224422222222
-00000000000000000000000000000000000000002222222222222222222222222222222222222222222222222222222222222222222222222222222222222222
-00000000000000000000000000000000000000002222222222222222222222222222222222222222222222222222222222222222222222222222222222222222
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb004422222222222222442222222222222244222222222222224422222222222222442222222222222244222222
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb004422222222222222442222222222222244222222222222224422222222222222442222222222222244222222
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb004444442244444444444444224444444444444422444444444444442244444444444444224444444444444422
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb004444442244444444444444224444444444444422444444444444442244444444444444224444444444444422
-00000000000000000000000000000000000000004444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-00000000000000000000000000000000000000004444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-44442222222222222222222222222222224444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-44442222222222222222222222222222224444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-4444cccc2222cccccc222222cccccc22cccccc444444448888884488888844444444888888448888884444444488888844888888444444444444444444444444
-4444cccc2222cccccc222222cccccc22cccccc444444448888884488888844444444888888448888884444444488888844888888444444444444444444444444
-444411cc2222cc11112222221111cc22cc11cc444444442222884488222244444444882222448822884444444422228844882288444444444444444444444444
-444411cc2222cc11112222221111cc22cc11cc444444442222884488222244444444882222448822884444444422228844882288444444444444444444444444
-444422cc2222cccccc222222cccccc22cc44cc444444444488884488888844444444888888448844884444444444448844884488444444444444665544444444
-444422cc2222cccccc222222cccccc22cc44cc444444444488884488888844444444888888448844884444444444448844884488444444444444665544444444
-444422cc22221111cc222222cc111122cc44cc444444444422884422228844444444222288448844884444444444448844884488444444444466666655444444
-444422cc22221111cc222222cc111122cc44cc444444444422884422228844444444222288448844884444444444448844884488444444444466666655444444
-4444cccccc22cccccc222222cccccc22cccccc444444448888884488888844444444888888448888884444444444448844888888444444446666666666554444
-4444cccccc22cccccc222222cccccc22cccccc444444448888884488888844444444888888448888884444444444448844888888444444446666666666554444
-44441111112211111122222211111122111111444444442222224422222244444444222222442222224444444444442244222222444444666666666666665544
-44441111112211111122222211111122111111444444442222224422222244444444222222442222224444444444442244222222444444666666666666665544
-44442222222222222222222222222222224444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-44442222222222222222222222222222224444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-44442222222222222222222222222222224444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-44442222222222222222222222222222224444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-4444bbbbbbbbbbbbbbbb2222bbbbbbbbbbbbbbbb4444448888888888888888444444888888888888888844444488888888888888884444444444444444444444
-4444bbbbbbbbbbbbbbbb2222bbbbbbbbbbbbbbbb4444448888888888888888444444888888888888888844444488888888888888884444444444444444444444
-4444bb111177661111bb2222bb117755994411bb4444448811111177661188444444881111776611118844444488117755882211884444bbbbbbbbbbbbbb3344
-4444bb111177661111bb2222bb117755994411bb4444448811111177661188444444881111776611118844444488117755882211884444bbbbbbbbbbbbbb3344
-4444bb111177661111bb2222bb117755119944bb444444881177666666118844444488111177661111884444448811775511882288444444bbbbbbbbbb334444
-4444bb111177661111bb2222bb117755119944bb444444881177666666118844444488111177661111884444448811775511882288444444bbbbbbbbbb334444
-4444bb111177661111bb2222bb117755111199bb44444488117766666611884444441188117766111188444444881177551111888844444444bbbbbb33444444
-4444bb111177661111bb2222bb117755111199bb44444488117766666611884444441188117766111188444444881177551111888844444444bbbbbb33444444
-4444bb111177661111bb2222bb117755111199bb4444448811994477661188444444118888116611118844444488117755111188884444444444bb3344444444
-4444bb111177661111bb2222bb117755111199bb4444448811994477661188444444118888116611118844444488117755111188884444444444bb3344444444
-4444bb119944444411bb2222bb117755119944bb4444448811994411111188444444118888881122118844444488117755118822884444444444444444444444
-4444bb119944444411bb2222bb117755119944bb4444448811994411111188444444118888881122118844444488117755118822884444444444444444444444
-4444bb111199441111bb2222bb117755994411bb4444448811994411111188444444118888888811118844444488117755882211884444444444444444444444
-4444bb111199441111bb2222bb117755994411bb4444448811994411111188444444118888888811118844444488117755882211884444444444444444444444
-4444bbbbbbbbbbbbbbbb2222bbbbbbbbbbbbbbbb4444448888888888888888444444118888111188888844444488888888888888884444444444444444444444
-4444bbbbbbbbbbbbbbbb2222bbbbbbbbbbbbbbbb4444448888888888888888444444118888111188888844444488888888888888884444444444444444444444
-44444444444444442222222222222222444444444444444444444444444444444444441111881144444444444444444444444444444444444444444444444444
-44444444444444442222222222222222444444444444444444444444444444444444441111881144444444444444444444444444444444444444444444444444
-
 __gff__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1783,35 +1700,6 @@ __sfx__
 0001000000000000000d0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000010161007600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
 010300003f6103361027610216101e610166101442311413114230f4130f4230c4130c4232460020600206000d600206001f6000d6000d600096000d60037600336002b600206000d6000d6000d6000d60000000
-010a00001f0501705014050120501005010050120500000015050000001c050000002105000000260502805025050210501d05015050140501405016050000001905000000000001e05000000230502705029050
-0114002025013310130000000000310130000000000260130d0130d01300000000000000000000000000000025013310130000000000310130000000000260130d0130d013000000000000000000000000000000
-011a00000c1111011210513116130c1110e6121011110113101120c111101130e111111120e1131011213111101121061310111101130e6110e113101110e11211111106120e1131011110113106130e1120d111
-011a000000000000000c1121011210512116120c1120e6121011210112101120c112101120e112111120e1121011213112101121061210112101120e6120e112101120e11211112106120e112101121011210612
-011a00200501509015010150000504015090150201500005020150901504015090150701509015020150401505015090150101500005040150901502015000050201509015040150901507015090150201504015
-011a00000511509115011150010504115091150211500105021150911504115091150711509115021150411505115091150111500105041150911502115001050211509115041150911507115091150211504115
-011a00000541509415014150040504415094150241500405024150941504415094150741509415024150441505415094150141500405044150941502415004050241509415044150941507415094150241504415
-011a00000213302113001000010002113000000211300100021130211300100001000211302113021230213302133021130010000100021130000002113001000211302113001000010002113021130212300000
-011a00000012300103001330010300123001030013300103001230010300133001030012300103001330010300123001030013300103001230010300133001030012300103001330010300123001030013300103
-011a00200541409410014140141004414094100241402410024140941004414094100741409410024140441005414094100141401410044140941002414024100241409410044140941007414094100241404410
-011a00201d4142141019424194201c414214101a4241a4201a414214101c424214201f414214101a4241c4201d4142141019424194201c414214101a4241a4201a414214101c424214201f414214101a4241c420
-011a0020180151a0151c0251a0251d0151a0151c0251c0251a015180151a025180251a0151d0151a0251d0251a015180151a025180251a015180151a025180251a0151a015180251a025180151a015180251d025
-011a00000011300103001130010300113001030011300103001130010300113001030011300103001130010300113001030011300103001130010300113001030011300103001130010300113001030011300103
-011a002011414154100d4240d42010414154100e4240e4200e41415410104241542013414154100e4241042011414154100d4240d42010414154100e4240e4200e41415410104241542013414154100e42410420
 __music__
-01 1c424344
-00 5c1d4344
-00 1c245f44
-00 1d5f2444
-00 1d622044
-02 1e206044
-00 1e216044
-00 20216263
-00 20211e62
-00 20211e22
-00 20211e22
-00 1e252244
-00 1e256044
-00 1c1e4344
-00 1c244344
-02 1c5f2044
+02 41424344
 
