@@ -1,5 +1,5 @@
 # State of the game
 
-## put commit id here !
+## 034d10
 
 ![Imgur](https://i.imgur.com/LXOrdO2.gif)
