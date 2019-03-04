@@ -1,15 +1,18 @@
 pico-8 cartridge // http://www.pico-8.com
-version 15
+version 16
 __lua__
 
 -- lowrez defense
 -- by wombart
 
 local mode,game_objects,part,shkx, shky,whiteframe,spawner,camera_offset,
-do_once ,left_click_once_timer, modx, mody, button_line, enemies, allies =  'start',{},{},
- 0 ,0, false,nil,0, false,0,0,0,0,{},{}
+do_once ,left_click_once_timer, modx, mody, button_line = 'start',{},{},
+ 0 ,0, false,nil,0, false,0,0,0,0
 
+local debugmode = false
 local main_camera,mouse,turret,enemy_tower
+
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=15, alivee=0, enemy_limit = 20}}
 
 
 function _init()
@@ -17,6 +20,7 @@ function _init()
  poke(0x5f2d, 1)
 
  -- start_game()
+ init_all_gameobject()
 
 end
 
@@ -36,16 +40,32 @@ end
 
 
 function _draw()
- if mode == 'start' then
-  draw_start()
- elseif mode=='game' then
-  draw_game()
- elseif mode=='gameover' then
-  draw_gameover()
- elseif mode=='victory' then
-  draw_victory()
- end
+  if mode == 'start' then
+    draw_start()
+  elseif mode=='game' then
+    draw_game()
+  elseif mode=='gameover' then
+    draw_gameover()
+  elseif mode=='victory' then
+    draw_victory()
+  end
 
+  if (debugmode) then
+      -- print('fps:'..stat(7),main_camera.x+ 0, 11+main_camera.y, 11, 3)
+      print('obj:'..#game_objects, main_camera.x-21, main_camera.y-5, 8, 2)
+      -- print('time:'..flr(time()/2),main_camera.x-64, main_camera.y-64, 8, 2)
+      -- print('e:'..spawner.alivee,main_camera.x-30, 30 +main_camera.y, 8, 2)
+
+      -- print('mem_use:'..stat(0),main_camera.x+ 0, 30+main_camera.y, 8, 2)
+      print('cpu:'..stat(1),main_camera.x-25, 0+main_camera.y, 9, 4)
+      -- print('particles:'..#part,main_camera.x+ 0, 50+main_camera.y, 8, 2)
+      -- spe_print('sys_cpu:'..stat(2),main_camera.x+ 0, 50+main_camera.y, 8, 2)
+
+      -- spe_print(main_camera.x, main_camera.x, main_camera.y, 8, 2)
+      -- spe_print(main_camera.y, main_camera.x, main_camera.y, 8, 2)
+      print(spawner.alivee, mouse.x, mouse.y-8, 0)
+
+  end
 
 end
 
@@ -90,15 +110,16 @@ function init_all_gameobject()
  make_change_button_line(23, 15, 115, -1)
  make_change_button_line(23, 22, 116, 1)
 
- make_gameobject(32, 32, 'camera', {newposition = {x=0, y=0}})
- make_gameobject(0, 32, 'mouse', {newposition = {x=0, y=0}})
- make_tower(270, 8, 'enemy_tower', 250, {x0=96, y0=0, x1=112-96, y1=32-0})
- make_turret(2, 8, 'ally_turret', {{x0=0, y0=0, x1=16, y1=32}, {x0=0, y0=32, x1=16, y1=32}})
+ main_camera = make_gameobject(32, 32, 'camera', {newposition = {x=0, y=0}})
+ mouse = make_gameobject(0, 32, 'mouse', {newposition = {x=0, y=0}})
+ enemy_tower = make_tower(270, 8, 'enemy_tower', 250, {x0=96, y0=0, x1=112-96, y1=32-0})
+ turret = make_turret(2, 8, 'ally_turret', {{x0=0, y0=0, x1=16, y1=32}, {x0=0, y0=32, x1=16, y1=32}})
 
- spawner = make_gameobject(0, 0, 'spawner', {
-  timer=0,
-  time_between_spawn=15,
-  alivee=0
+ 
+ spawner = make_gameobject(spawner_infos.x, spawner_infos.y, spawner_infos.tag, {
+  timer = spawner_infos.properties.timer,
+  time_between_spawn = spawner_infos.properties.time_between_spawn,
+  alivee = spawner_infos.properties.alivee
   })
 
 end
@@ -144,34 +165,16 @@ function whiteframe_update()
 end
 
 function start_game()
- init_all_gameobject()
- turret = search_gameobject('ally_turret')
- main_camera = search_gameobject('camera')
- mouse = search_gameobject('mouse')
- enemy_tower = search_gameobject('enemy_tower')
+
  mode = 'game'
 end
 
 function draw_map()
- -- for i=0, 64 do
- --  local x, y= rnd(64, 64), rnd(64, 64)
- --  rectfill(x,y, x+4,y+4, flr(rnd(2)))
- -- end
- -- rectfill(-20+shkx, -20+shky, 84+shkx, 12+shky, 5)
- -- rectfill(-20+shkx, 34+shky, 84+hkx, 42+shky, 7)
- -- rectfill(-20+shkx, 42+shky, 84+shkx, 84+shky, 1)
- -- for i=0, rnd(4) do
- -- end
  map(0, 0, -86+shkx, 0+shky, 60, 8)
- -- for i=0, 5 do
- --  sspr(0, 32, 31, 31, rnd(64), 3)
- -- end
 end
+
 function draw_start()
  cls(12)
- -- sspr(0, 64, 96, 55, 15, 2*cos(time()/4))
- -- main_camera = search_gameobject('camera')
- --  init_all_gameobject()
 
  -- draw_map()
  spe_print("lowrez defense", 5, 10, 12, 1)
@@ -197,13 +200,13 @@ function draw_game()
  draw_all_gameobject()
  
  for obj in all(game_objects) do
-  if obj:is_active() and (obj:get_tag()=='enemy_tower' or
+  if (obj:get_tag()=='enemy_tower' or
    obj:get_tag() == 'ally_turret') then obj:draw()
   end
  end
 
  for obj in all(game_objects) do
-  if obj:is_active() and (sub(obj:get_tag(), 1, 6)) == 'button' then
+  if (sub(obj:get_tag(), 1, 6)) == 'button' then
    obj:draw() 
   end
  end
@@ -215,7 +218,6 @@ function draw_game()
  draw_mouse_cursor()
  -- print(#part, 20, 20, 8)
 
-print(spawner.alivee, mouse.x, mouse.y-8, 0)
 
 end
 function update_game()
@@ -260,9 +262,7 @@ function draw_gameover()
 
  draw_part()
  for obj in all(game_objects) do
-  if(obj:is_active() == true) then
    obj:draw()
-  end
  end
  draw_mouse_cursor()
 end
@@ -293,9 +293,7 @@ function draw_victory()
 
  draw_part()
  for obj in all(game_objects) do
-  if(obj:is_active() == true) then
    obj:draw()
-  end
  end
  draw_mouse_cursor()
  spe_print('the kingdom\n\nis saved !!!', main_camera.x-22, main_camera.y-27-2*(cos(time())), 11, 3)
@@ -310,33 +308,34 @@ end
 
 function draw_camera_button()
 
--- left
- outline_spr(99+flr(time()/2%2), main_camera.x-32, 26)
- spr(99+flr(time()/2%2), main_camera.x-32, 26)
--- right
- outline_spr(99+flr(time()/2%2), main_camera.x+24, 26, true)
- spr(99+flr(time()/2%2), main_camera.x+24, 26, 1, 1, true)
+  -- left
+  outline_sspr(25, 49, 16, 7, main_camera.x-32, 13, 16, 7, false)
+  sspr(25, 49, 16, 7, main_camera.x-32, 13)
 
- -- pset(main_camera.x-28, 27, 8)
- -- pset(main_camera.x-28, 33, 8)
- -- pset(main_camera.x+30, 30, 8)
- -- pset(main_camera.x-31, 30, 8)
+  -- right
+  outline_sspr(25, 49, 16, 7, main_camera.x+16, 13, 16, 7, true)
+  sspr(25, 49, 16, 7, main_camera.x+16, 13, 16, 7, true)
+
 end
 
 function camera_follow()
- 
- if (pget(main_camera.x+30, 30) != 10 or pget(main_camera.x+27, 27) != 10
-  or pget(main_camera.x+27, 33) != 9) and main_camera.x < 270 then main_camera.x += 1 
- elseif (pget(main_camera.x-31, 30)!=10 or pget(main_camera.x-28, 27) != 10 or pget(main_camera.x-28, 33) != 9
-  or pget(main_camera.x-29, 29) != 10 or pget(main_camera.x-29, 30) != 10) and main_camera.x > 15 then main_camera.x -= 1 end
 
- -- if main_camera.x -stat(32) >= 32 then 
- --  main_camera.x -= 1
- -- elseif main_camera.x -stat(32) <= -26 then
- --  main_camera.x += 1
- -- end
- 
- 
+  local mouse_x, mouse_y = mouse.x, mouse.y
+  local cam_x, cam_y = main_camera.x, main_camera.y
+  -- move camera to the right
+  -- trigger positions. 
+  local right_x0, right_y0, right_y1 = 16, 12, 24
+  if mouse_x > cam_x + right_x0 and mouse_y < cam_y - right_y0 and mouse_y > cam_y - right_y1 then
+    main_camera.x += 1
+  end
+
+  -- move camera to the left
+  local left_x0, left_y0, left_y1 = 20, 12, 24
+  -- if mouse_x > main_camera.x - left_x0 and mouse_y < cam_y - left_y0 and mouse_y > cam_y - left_y1 then
+  if mouse.x < cam_x - left_x0 and mouse_y < cam_y - left_y0 and mouse_y > cam_y - left_y1  then
+    main_camera.x -= 1
+  end
+
  camera(main_camera.x-32 ,main_camera.y-32)
 end
 
@@ -435,8 +434,6 @@ end
 
 -- ##random_enemy_spawning
 function random_enemy_spawning()
- local spawner = search_gameobject('spawner')
- if(spawner == nil) then return end
  if spawner.timer <= time() then
   if spawner.time_between_spawn > 3 then spawner.time_between_spawn *= 0.95 end
   sfx(21)
@@ -467,7 +464,7 @@ end
 -- ##unit
 function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
  spawner.alivee += 1
- local enemy = make_gameobject(x, y, tag,{
+ local unit = make_gameobject(x, y, tag,{
   sprite=sprite,
   max_health=health,
   current_health=health,
@@ -487,7 +484,7 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
    -- if self:get_target() == nil or self:get_target():is_alive() == false then self.attack_info.target=nil end
    local shortest = 10000
    for obj in all(game_objects) do
-    if sub(obj:get_tag(),1,#self.attack_info.target_tag)  == self.attack_info.target_tag and obj:is_active() then
+    if sub(obj:get_tag(),1,#self.attack_info.target_tag)  == self.attack_info.target_tag then
      local dist = distance(self, obj, true)
      if dist < shortest then
       if (sub(self.attack_info.target_tag,1, 5) == 'enemy' and self.x < obj.x)
@@ -506,29 +503,18 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
     -- local side = 1
     blood_part(self:center('x'), self:center('y')+16, 1, {8})
     -- if self.attack_info.target_tag == 'enemy' then side = -1 end
-     blood_explosion(self:center('x'), self:center('y'), 50, self.side, {8})
--- blood_explosion(x, y, quantity, direction, colarr)
-     if self.attack_info.target_tag == 'ally' then
+    blood_explosion(self:center('x'), self:center('y'), 50, self.side, {8})
+    -- blood_explosion(x, y, quantity, direction, colarr)
+    if self.attack_info.target_tag == 'ally' then
       local points = self.max_health + rnd(5)
       -- turret.mana += flr(points)
       -- show_message('+'..flr(points)..'$', self.x, self.y, 11, 3, 5, 2, 'score', true, true)
       mana_part(self.x, self.y,  main_camera.x-24, main_camera.y-30, flr(points),{12}) 
-     end
-     sfx(self.sounds.death +flr(rnd(2)))
-     -- shake_camera(0.5)
-     -- ennemy does damage around him on other enemies
-     local rand = flr(rnd(11))
-     if rand >= 8 then
-      -- shake_camera(10)
-      for obj in all(enemies) do
-       if obj:is_active() and obj:is_alive() and distance(self, obj) < 30 then
+    end
+    sfx(self.sounds.death +flr(rnd(2)))
+    -- shake_camera(0.5)
 
-        obj:take_damage(obj.max_health)
-       end
-      end
-     end
-     self.x, self.y = 130, 130
-     self:disable()
+    self:disable()
   end,
   is_alive=function(self)
    if self.current_health <= 0 then
@@ -545,12 +531,12 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
    else return false end
   end,
   move=function(self)
-   if self:can_attack() == false and self:get_target() != nil then
+   if self:can_attack() == false then
     move_toward(self, {x=self:get_target().x, y=self.y}, self.move_speed)
    end
   end,
   attack=function(self)
-   if self.attack_info.timer < time() and self:get_target() != nil and
+   if self.attack_info.timer < time() and
      distance(self, self:get_target()) < self.attack_info.range then
      
     self.attack_info.timer = time() + self.attack_info.attack_speed
@@ -709,7 +695,7 @@ function meteor_ability()
     local shortest = 10000
     for obj in all(game_objects) do
 
-     if sub(obj:get_tag(),1,5)  == 'enemy' and obj:is_active() then
+     if sub(obj:get_tag(),1,5)  == 'enemy' then
       local dist = distance(self, obj, true)
        if dist < 10 then 
         obj:take_damage(self.damage)
@@ -936,7 +922,7 @@ function make_turret(x, y, tag,sprite)
    local shortest = 10000
    for obj in all(game_objects) do
 
-    if sub(obj:get_tag(),1,5)  == 'enemy' and obj:is_active() then
+    if sub(obj:get_tag(),1,5)  == 'enemy' then
      local dist = distance(self, obj)
      if dist < shortest then
       shortest = dist
@@ -1040,7 +1026,7 @@ function make_turret(x, y, tag,sprite)
   end,
   update=function(self)
    self:mana_management()
-   self.is_winning()
+   -- self.is_winning()
    self:is_alive()
    self:find_target()
    self:attack()
@@ -1071,10 +1057,10 @@ function make_bullet(x, y, damage, backoff, move_speed, sprite, target, tag, pow
   target=target,
   direction={x=target.x, y=target.y},
   update=function(self)
-   if self.target:is_active() == false then self:disable() end
+   if self.target:is_alive() == false then self:disable() end
    -- self.move_speed *= 0.98
    self:move_straight()
-   if(distance(self, self.target) <= 5 and self.target:is_active() == true and self.target:is_alive()) then
+   if(distance(self, self.target) <= 5 and self.target:is_alive()) then
     -- backoff the target
     -- move_toward(self.target, self, -backoff)
 
@@ -1082,7 +1068,7 @@ function make_bullet(x, y, damage, backoff, move_speed, sprite, target, tag, pow
 
     self:explode()
     self:disable()
-   elseif self.target:is_active() == false then
+   elseif self.target:is_alive() == false then
     self:disable()
    end
   end,
@@ -1132,11 +1118,15 @@ end
 
 -- the y axis has a default value, 
 function distance(current, target, yaxis)
- if current == nil or target == nil then return nil end
+ -- if current == nil or target == nil then return nil end
  local x0, y0, x1, y1 = current.x/100, current.y/100, target.x/100, current.y/100
  if yaxis != nil and yaxis == true then y1 = target.y/100 end
  return sqrt((x1 - x0)^2+(y1 - y0)^2)*100
 end
+
+-- function fast_distance(current, target, yaxis)
+
+-- end
 
 function move_toward(current, target, move_speed)
  if(move_speed == 0) then move_speed = 1 end
@@ -1154,7 +1144,7 @@ end
 
 function update_all_gameobject()
  for obj in all(game_objects) do
-  if obj:is_active() then obj:update() end
+  obj:update()
  end
 end
 
@@ -1162,45 +1152,28 @@ function draw_all_gameobject()
  sortbyy(game_objects)
  for obj in all(game_objects) do
 
-  if obj:is_active()  then obj:draw() end
+    obj:draw()
  end
 end
 
 -- ##make_gameobject
 function make_gameobject(x, y, tag, properties)
 
- for obj in all(game_objects) do
-  if obj:get_tag() == tag and obj:is_active() == false then
-   obj:set_value(x, y, tag)
-   obj:reset()
-   return obj
-  end
- end 
-
  local obj = {
   x=x,
   y=y,
   tag=tag,
   active=true,
-  enable=function(self)
-   self.active=true
-  end,
   set_value=function(self, x, y, tag)
    self.x=x
    self.y=y
    self.tag=tag
   end,
   disable=function(self)
-   self.active =false
+   del(game_objects, self)
   end,
   get_tag=function(self)
    return self.tag
-  end,
-  is_active=function(self)
-   return self.active
-  end,
-  reset=function(self)
-   self:enable()
   end,
   center=function(self, value)
    if value == 'x' then return self.x+4
@@ -1212,6 +1185,7 @@ function make_gameobject(x, y, tag, properties)
   draw=function()
   end
  }
+
  if properties != nil then
     for k, v in pairs(properties) do
      obj[k] = v
@@ -1224,15 +1198,6 @@ end
 
 -- ##part
 function add_part(x, y ,tpe, size, mage, dx, dy, colarr)
-
- for obj in all(game_objects) do
-  if(obj:is_active() == false and obj:get_tag() == tag) then
-   obj:set_value(x,y,tag)
-   obj:reset()
-   return obj
-  end
- end
-
 
  local p = {
   x=x,
@@ -1583,13 +1548,13 @@ ccc1111cccc1111c0000eee00eee000000000eeeee0000000000eee00eee00000000000eeeee0000
 01c7771ccc7771000000000000000000444444440166611001194110017594100194111001182110017582100182111001194110011a91100666111006661110
 01c68877772261000000000000000000444444440000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0116888822226c00422222220000000000000000000000000000000dd0000000000000000000000000000dd00000770000000000007dd7700000000000000000
-0116888822226c00242222420000a0000000a00000000000000000dddd000000000000dd000000000000dddd000777000000000777dddd770000000000000000
-01c688882222610022222222000aa000000aa0000cccc000000000dfdd00000000000dddd00000000000dfdd000777700000077777dfdd770000000000000000
-01c68888222261002242222200aaa00000aaa0000ccccc007000000ffd00000000000dfdd000000000000ffd0000077000077777777ffd770000000000000000
-0116888822226c00444442440aaaa0000aaaa000011110007770000000000000000000ffd0000000000000000000040000077777477777770000000000000000
-0116888822226c00444444440099a0000099a0000000000077700eedee00000070000000000000000000edee50000400007777444eedee770000000000000000
-01c6888822226100444444440009900000099000000000007770eedddee000007770eedeee0000000000dddeed00400000777744eedddee70000000000000000
-01c168882226115044444444000090000000900000000000704000dd5dd00000777eedddee0000000000ddddd0f400000777444444dd5dd00000000000000000
+0116888822226c00242222420000aaaaaaaaa00000000000000000dddd000000000000dd000000000000dddd000777000000000777dddd770000000000000000
+01c688882222610022222222000aaaaaaaaaa0000cccc000000000dfdd00000000000dddd00000000000dfdd000777700000077777dfdd770000000000000000
+01c68888222261002242222200aaaaaaaaaaa0000ccccc007000000ffd00000000000dfdd000000000000ffd0000077000077777777ffd770000000000000000
+0116888822226c00444442440aaaaaaaaaaaa000011110007770000000000000000000ffd0000000000000000000040000077777477777770000000000000000
+0116888822226c00444444440099aaaaaaaaa0000000000077700eedee00000070000000000000000000edee50000400007777444eedee770000000000000000
+01c68888222261004444444400099aaaaaaaa000000000007770eedddee000007770eedeee0000000000dddeed00400000777744eedddee70000000000000000
+01c168882226115044444444000099999999900000000000704000dd5dd00000777eedddee0000000000ddddd0f400000777444444dd5dd00000000000000000
 011c68882226cc570000000000000000000000000000000000400505ddd0000077700dd5d0000000000000ddd5df0000077744444575ddd00000000000000000
 011cc688226ccc57000000000000000000000000000000000004d0d0ddd000007040505dd0000000000000ddd040000007774444d4d0ddd00000000000000000
 01c116882261115000000000000b3000bbbbbbb3000000000004ff00555000000040ddddd000000000000055500000000777744df00055500000000000000000
