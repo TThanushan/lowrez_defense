@@ -7,7 +7,10 @@ __lua__
 local mode,game_objects,part,shkx, shky,whiteframe,spawner,camera_offset,
 do_once ,left_click_once_timer, modx, mody, button_line, enemies, allies =  'start',{},{},
  0 ,0, false,nil,0, false,0,0,0,0,{},{}
-
+ 
+local camx=64
+local camy=64
+local debugmode = true
 local main_camera,mouse,turret,enemy_tower
 
 
@@ -35,16 +38,31 @@ end
 
 
 function _draw()
- if mode == 'start' then
-  draw_start()
- elseif mode=='game' then
-  draw_game()
- elseif mode=='gameover' then
-  draw_gameover()
- elseif mode=='victory' then
-  draw_victory()
- end
+    if mode == 'start' then
+        draw_start()
+    elseif mode=='game' then
+        draw_game()
+    elseif mode=='gameover' then
+        draw_gameover()
+    elseif mode=='victory' then
+        draw_victory()
+    end
 
+    if (debugmode) then
+        -- print('fps:'..stat(7),main_camera.x+ 0, 11+main_camera.y, 11, 3)
+        print('object:'..#game_objects,main_camera.x+ 0, 20+main_camera.y, 8, 2)
+        -- print('#enenmies:'..#enemies,main_camera.x+ 0, main_camera.y, 8, 2)
+        -- print('time:'..flr(time()/2),main_camera.x-64, main_camera.y-64, 8, 2)
+        print('e:'..spawner.alivee,main_camera.x-30, 30 +main_camera.y, 8, 2)
+
+        print('mem_use:'..stat(0),main_camera.x+ 0, 30+main_camera.y, 8, 2)
+        print('all_cpu:'..stat(1),main_camera.x+ 0, 40+main_camera.y, 9, 4)
+        -- print('particles:'..#part,main_camera.x+ 0, 50+main_camera.y, 8, 2)
+        -- spe_print('sys_cpu:'..stat(2),main_camera.x+ 0, 50+main_camera.y, 8, 2)
+
+        -- spe_print(main_camera.x, main_camera.x, main_camera.y, 8, 2)
+        -- spe_print(main_camera.y, main_camera.x, main_camera.y, 8, 2)
+    end
 
 end
 
@@ -89,7 +107,7 @@ function init_all_gameobject()
  make_change_button_line(23, 15, 115, -1)
  make_change_button_line(23, 22, 116, 1)
 
- make_gameobject(32, 32, 'camera', {newposition = {x=0, y=0}})
+ main_camera = make_gameobject(32, 32, 'camera', {newposition = {x=0, y=0}})
  make_gameobject(0, 32, 'mouse', {newposition = {x=0, y=0}})
  make_tower(270, 8, 'enemy_tower', 250, {x0=96, y0=0, x1=112-96, y1=32-0})
  make_turret(2, 8, 'ally_turret', {{x0=0, y0=0, x1=16, y1=32}, {x0=0, y0=32, x1=16, y1=32}})
@@ -1176,14 +1194,6 @@ end
 -- ##make_gameobject
 function make_gameobject(x, y, tag, properties)
 
- for obj in all(game_objects) do
-  if obj:get_tag() == tag and obj:is_active() == false then
-   obj:set_value(x, y, tag)
-   obj:reset()
-   return obj
-  end
- end 
-
  local obj = {
   x=x,
   y=y,
@@ -1232,13 +1242,13 @@ end
 -- ##part
 function add_part(x, y ,tpe, size, mage, dx, dy, colarr)
 
- for obj in all(game_objects) do
-  if(obj:is_active() == false and obj:get_tag() == tag) then
-   obj:set_value(x,y,tag)
-   obj:reset()
-   return obj
-  end
- end
+ -- for obj in all(game_objects) do
+ --  if(obj:is_active() == false and obj:get_tag() == tag) then
+ --   obj:set_value(x,y,tag)
+ --   obj:reset()
+ --   return obj
+ --  end
+ -- end
 
 
  local p = {
