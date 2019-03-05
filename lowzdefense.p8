@@ -9,14 +9,16 @@ local mode,game_objects,part,shkx, shky,whiteframe,spawner,camera_offset,
 do_once ,left_click_once_timer, modx, mody, button_line = 'start',{},{},
  0 ,0, false,nil,0, false,0,0,0,0
 
-local debugmode = true
+local left_map_limit, right_map_limit = 20, 200
+local debugmode = false
 local main_camera,mouse,turret,enemy_tower
 
 local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=15, alivee=0, enemy_limit = 20}}
-
+local is_camera_button_left_hover, is_camera_button_right_hover = false, false
 
 function _init()
- poke(0x5f2c,3)
+
+ -- poke(0x5f2c,3)
  poke(0x5f2d, 1)
 
  -- start_game()
@@ -84,31 +86,34 @@ function init_decors()
 end
 -- ##init
 function init_all_gameobject()
- 
+  -- making local variable make the access to the function faster.
+ local make_button = make_button
  init_decors()
 
+ local space_between = 14
+ local pos_x, pos_y = -45, 23 
 -- buttons.
 -- line 0
- make_button(-30, 23, 3, {86}, 15,'button_unit1', 0)
- make_button(-20, 23, 5,{87}, 20,'button_unit2', 0)
- make_button(-9, 23, 12,{88}, 35,'button_unit3', 0)
- make_button(2, 23, 16,{89}, 50,'button_unit4', 0)
- make_button(13, 23, 20,{90}, 70,'button_unit5', 0)
--- line 1
- make_button(-30, 23, 3, {91}, 100,'button_unit6', 1)
- make_button(-10, 23, 3, {92}, 150,'button_unit7', 1)
- make_button(10, 23, 3,{93}, 100,'button_unit8', 1)
- make_button(-30, 23, 3, {94, 78}, 50,'button_manaregen', 2)
- make_button(-13, 23, 3,{95, 79}, 50,'button_manamax', 2)
- make_button(5, 23, 3, {85, 69}, 100,'button_lesscooldown', 2)
- make_button(20, -30, 60, {77}, 0,'button_meteor', 0)
- -- make_button(10, 23, 3, 93, 100,'button_manamax', 1)
- -- make_button(-20, 23, 5,87, 20,'button_unit2', 1)
- -- make_button(-9, 23, 12,88, 35,'button_unit3', 1)
- -- make_button(2, 23, 16,89, 50,'button_unit4', 1)
- -- make_button(13, 23, 20,90, 70,'button_unit5', 1)
- make_change_button_line(23, 15, 115, -1)
- make_change_button_line(23, 22, 116, 1)
+ make_button(pos_x+space_between, pos_y, 3, {86}, 15,'button_unit1', 0)
+ make_button(pos_x+space_between*2, pos_y, 5,{87}, 20,'button_unit2', 0)
+ make_button(pos_x+space_between*3, pos_y, 12,{88}, 35,'button_unit3', 0)
+ make_button(pos_x+space_between*4, pos_y, 16,{89}, 50,'button_unit4', 0)
+ make_button(pos_x+space_between*5, pos_y, 20,{90}, 70,'button_unit5', 0)
+ make_button(pos_x+space_between*6, pos_y, 3, {91}, 100,'button_unit6', 0)
+ make_button(pos_x+space_between*7, pos_y, 3,{93}, 100,'button_unit8', 0)
+ make_button(pos_x+space_between*8, pos_y, 3, {92}, 150,'button_unit7', 0)
+ -- line 1
+ make_button(pos_x+space_between, pos_y, 3, {94, 78}, 50,'button_manaregen', 1)
+ make_button(pos_x+space_between*2, pos_y, 3,{95, 79}, 50,'button_manamax', 1)
+ make_button(pos_x+space_between*3, pos_y, 3, {85, 69}, 100,'button_lesscooldown', 1)
+ make_button(87, pos_y, 60, {77}, 0,'button_meteor', 99)
+ -- make_button(10, pos_y, 3, 93, 100,'button_manamax', 1)
+ -- make_button(-20, pos_y, 5,87, 20,'button_unit2', 1)
+ -- make_button(-9, pos_y, 12,88, 35,'button_unit3', 1)
+ -- make_button(2, pos_y, 16,89, 50,'button_unit4', 1)
+ -- make_button(13, pos_y, 20,90, 70,'button_unit5', 1)
+ make_change_button_line(79, 15, 115, -1)
+ make_change_button_line(79, pos_y, 116, 1)
 
  main_camera = make_gameobject(32, 32, 'camera', {newposition = {x=0, y=0}})
  mouse = make_gameobject(0, 32, 'mouse', {newposition = {x=0, y=0}})
@@ -124,13 +129,15 @@ function init_all_gameobject()
 
 end
 
-function make_change_button_line(x, y, n, value)
+function make_change_button_line(x, y, n, type)
  return make_gameobject(x, y, 'button_change_line',{
   sprite=n,
   -- used to fix bug
   max_cooldown=0,
   current_cooldown=0,
-  value=value,
+  max_line=1,
+  type=type,
+  original_pos = {x=x, y=y},
   is_mouse_over=function(self)
    if mouse.x >= main_camera.x+self.x and mouse.x < main_camera.x+self.x+8
     and mouse.y >= main_camera.y+self.y and
@@ -138,17 +145,34 @@ function make_change_button_line(x, y, n, value)
     return true
    else return false end
   end,
-  update=function(self)
-   if self:is_mouse_over() and is_mouse_left_click_once() then
-    sfx(18)
-    if self.value == -1 and button_line > 0 then button_line -= 1 sfx(3)
-    elseif self.value == 1 and button_line <= 1 then button_line += 1 sfx(3)end
-   end
+  do_change=function (self)
+    if self:is_mouse_over() and is_mouse_left_click_once() then
+      sfx(18)
+      if self.type == -1 and button_line > 0 then
+        button_line -= 1 sfx(3)
+      elseif self.type == 1 and button_line < self.max_line then
+        button_line += 1 sfx(3)
+      end
+    end    
   end,
-  draw=function(self)
+  animation=function(self)
+    if self.type != 1 then return end
+
+    if time()%1 > 0.5 then
+      self.y = self.original_pos.y
+    else
+      self.y -= 0.05
+    end
+  end,
+  update=function(self)
+    self:do_change()
+
+    self:animation()
+  end,
+  draw=function(self) 
    if self:is_mouse_over() then pal(11, 10) pal(3, 9) end
-   if button_line == 0 and self.value == -1 then pal(11, 6) pal(3, 5) 
-   elseif button_line == 2 and self.value == 1 then pal(11, 6) pal(3, 5) end
+   if button_line == 0 and self.type == -1 then pal(11, 6) pal(3, 5) 
+   elseif button_line == self.max_line and self.type == 1 then pal(11, 6) pal(3, 5) end
    spr(self.sprite, main_camera.x+self.x,main_camera.y+self.y)
    pal()
    -- circfill(self.x,self.y,5,7)
@@ -165,7 +189,6 @@ function whiteframe_update()
 end
 
 function start_game()
-
  mode = 'game'
 end
 
@@ -191,26 +214,9 @@ end
 function draw_game()
  cls()
  draw_map()
- -- outline_sspr(0, 0, 16, 16, 0, 18) sspr(0, 0, 16, 16, 0, 18) 
- -- if time()*4%2 >= 1 then outline_sspr(16, 0, 16, 16, x, 18) sspr(16, 0, 16, 16, x, 18) 
- --  else outline_sspr(32, 0, 16, 16, x, 18) sspr(32, 0, 16, 16, x, 18)  end
-  draw_part()
- 
-
+ draw_part()
  draw_all_gameobject()
  
- for obj in all(game_objects) do
-  if (obj:get_tag()=='enemy_tower' or
-   obj:get_tag() == 'ally_turret') then obj:draw()
-  end
- end
-
- for obj in all(game_objects) do
-  if (sub(obj:get_tag(), 1, 6)) == 'button' then
-   obj:draw() 
-  end
- end
-
  draw_camera_button()
 
  whiteframe_update()
@@ -221,50 +227,35 @@ function draw_game()
 
 end
 function update_game()
- update_part()
- do_camera_shake()
- random_enemy_spawning()
- update_all_gameobject()
- camera_follow()
+  update_part()
+  do_camera_shake()
+  random_enemy_spawning()
+  update_all_gameobject()
+  camera_follow()
 
- is_mouse_left_click_once()
- -- modx=shkx+main_camera.x
- -- mody=shky+main_camera.y
+  is_mouse_left_click_once()
 
-if btnp(0) then main_camera.x -= 1 turret.mana_max = 10000 end
-if btn(1) then main_camera.x += 1 end
--- if btnp(5) then sfx(0) mana_part(120, 30,  main_camera.x-24, main_camera.y-30, 1,{12}) end
+  if btn(0) and main_camera.x > left_map_limit then main_camera.x -= 1 end
+  if btn(1) and main_camera.x < right_map_limit then main_camera.x += 1 end
 end
 
 function update_gameover()
  if btn(5) then run() end
- -- if game_over == false then sfx(15) end
- -- game_over = true
- mode='gameover'
- -- camera_update()
+ mode = 'gameover'
 end
 
 function draw_gameover()
- cls(12)
- draw_map()
- -- camx, camy = 64, 64
- -- local modx, mody= camx + shkx, camy+shky
- -- camx, camy = player.x, player.y
- if do_once == false then 
-  do_once=true
-  sfx(19)
- spe_print('you died !!!', main_camera.x-20, main_camera.y-20-4*(cos(time())), 8, 2)
- -- show_message('you died !!!', main_camera.x-20, main_camera.y-20-4*(cos(time())), 8, 2, 15, 2, 'gameover1', true, false, false , 7)
- -- show_message('your score is '..flr(player.score), main_camera.x -32, main_camera.y+15, 10, 9, 10, 2, 'gameover2', true)
- -- show_message('press ❎ button \n\n  to restart', main_camera.x-29, main_camera.y + 10, 11, 3, 2, 2, 'gameover3', true, false, false , 7)
- 
- end
+  cls(12)
+  draw_map()
+  if do_once == false then 
+    do_once=true
+    sfx(19)
+    spe_print('you died !!!', main_camera.x-20, main_camera.y-20-4*(cos(time())), 8, 2)
+  end
 
- draw_part()
- for obj in all(game_objects) do
-   obj:draw()
- end
- draw_mouse_cursor()
+  draw_part()
+  draw_all_gameobject()
+  draw_mouse_cursor()
 end
 
 function update_victory()
@@ -309,13 +300,26 @@ end
 function draw_camera_button()
 
   -- left
-  outline_sspr(25, 49, 16, 7, main_camera.x-32, 13, 16, 7, false)
-  sspr(25, 49, 16, 7, main_camera.x-32, 13)
+  -- outline_sspr(25, 49, 16, 7, main_camera.x-28, 13, 16, 7)
+  -- button hover animation
+  if is_camera_button_left_hover then
+    pal(10, 7)
+    pal(9, 10)
+    pal(4, 9)
+  end
+  sspr(25, 49, 16, 7, main_camera.x-28, 13)
+  pal()
 
   -- right
-  outline_sspr(25, 49, 16, 7, main_camera.x+16, 13, 16, 7, true)
-  sspr(25, 49, 16, 7, main_camera.x+16, 13, 16, 7, true)
+  -- outline_sspr(25, 49, 16, 7, main_camera.x+75, 13, 16, 7, true)
+  if is_camera_button_right_hover then
+    pal(10, 7)
+    pal(9, 10)
+    pal(4, 9)
+  end
+  sspr(25, 49, 16, 7, main_camera.x+75, 13, 16, 7, true)
 
+  pal()
 end
 
 function camera_follow()
@@ -324,63 +328,36 @@ function camera_follow()
   local cam_x, cam_y = main_camera.x, main_camera.y
   -- move camera to the right
   -- trigger positions. 
-  local right_x0, right_y0, right_y1 = 16, 12, 24
-  if mouse_x > cam_x + right_x0 and mouse_y < cam_y - right_y0 and mouse_y > cam_y - right_y1 then
+  local right_x0, right_y0, right_y1 = 72, 12, 24
+  if mouse_x > cam_x + right_x0 and mouse_y < cam_y - right_y0 and mouse_y > cam_y - right_y1 and main_camera.x < right_map_limit then
+    is_camera_button_right_hover = true
     main_camera.x += 1
+  else
+    is_camera_button_right_hover = false
   end
 
   -- move camera to the left
-  local left_x0, left_y0, left_y1 = 20, 12, 24
+  local left_x0, left_y0, left_y1 = 14, 12, 24
   -- if mouse_x > main_camera.x - left_x0 and mouse_y < cam_y - left_y0 and mouse_y > cam_y - left_y1 then
-  if mouse.x < cam_x - left_x0 and mouse_y < cam_y - left_y0 and mouse_y > cam_y - left_y1  then
+  if mouse.x < cam_x - left_x0 and mouse_y < cam_y - left_y0 and mouse_y > cam_y - left_y1 and main_camera.x > left_map_limit then
+    is_camera_button_left_hover = true
     main_camera.x -= 1
+  else
+    is_camera_button_left_hover = false
   end
 
  camera(main_camera.x-32 ,main_camera.y-32)
 end
 
 function draw_mouse_cursor()
+ local spr = spr
  local posx= main_camera.x-mouse.x
  local posy= main_camera.y-mouse.y
  mouse.x = stat(32) +main_camera.x-32
  mouse.y = stat(33) + main_camera.y-32
 
--- block mouse x pos
- if posx > 32 then
-  pal(7, 8)
-  if posy > 32 then
-   spr(46,main_camera.x-32, main_camera.y-32)
-  else
-   spr(46,main_camera.x-32, mouse.y)
-  end
- elseif posx < -26 then
-  pal(7, 8)
-  if posy > 32 then
-   spr(46,main_camera.x+26, main_camera.y-32)
-  else
-   spr(46,main_camera.x+26, mouse.y)
-  end
- end
- -- block mouse y pos.
- if posy > 32 then
-  pal(7, 8)
-  spr(46,mouse.x, main_camera.y-32)
- elseif posy < -25 then
-  pal(7, 8)
-
-  if posx > 32 then
-   spr(46,main_camera.x-32, main_camera.y+25)
-  elseif posx < -26 then
-   spr(46,main_camera.x+26, main_camera.y+25)
-  else
-   spr(46,mouse.x, main_camera.y+25)
-  end
- end
-
- if posx <= 32 and posx >= -26 and posy <= 32 and posy >= -25 then
   spr(46,mouse.x, mouse.y)
- end
- pal()
+
 end
 
 -- ##tower
@@ -402,27 +379,25 @@ function make_tower(x, y, tag, health, sprite)
    end
   end,
   take_damage=function(self, damage)
-   -- whiteframe=true
-   self.current_health-= damage
-   shake_camera(0.25)
-   make_enemy(flr(rnd(4)))
-
-   return true
+    whiteframe=true
+    self.current_health-= damage
+    shake_camera(0.25)
+    if rnd() > 0.80 then
+      make_enemy(flr(rnd(4)))
+    end
+    return true
   end,
   draw_sprite=function(self)
     -- draw shadow
     change_all_pal(2)
-    -- sspr(self.sprite.x0, self.sprite.y0, self.sprite.x1, self.sprite.y1, x+shkx, y+shky+16, 16, 16, false, true) 
-    -- outline_sspr(self.sprite.x0, self.sprite.y0, self.sprite.x1, self.sprite.y1, x+shkx, y+shky+16, 16, 16, false, true,2) 
-
     pal()
 
-   outline_sspr(self.sprite.x0, self.sprite.y0, self.sprite.x1, self.sprite.y1, x+shkx, y+shky,16, 32) 
-   sspr(self.sprite.x0, self.sprite.y0, self.sprite.x1, self.sprite.y1, x+shkx, y+shky) 
+    -- outline_sspr(self.sprite.x0, self.sprite.y0, self.sprite.x1, self.sprite.y1, x+shkx, y+shky,16, 32) 
+    sspr(self.sprite.x0, self.sprite.y0, self.sprite.x1, self.sprite.y1, x+shkx, y+shky) 
   end,
   draw=function(self)
-   self:draw_sprite()
-   self:show_health()
+    self:draw_sprite()
+    self:show_health()
   end,
   update=function(self)
    self:is_alive()
@@ -482,26 +457,27 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
   end,
   find_target=function(self)
    -- if self:get_target() == nil or self:get_target():is_alive() == false then self.attack_info.target=nil end
-   local shortest = 10000
-   for obj in all(game_objects) do
-    if sub(obj:get_tag(),1,#self.attack_info.target_tag)  == self.attack_info.target_tag then
-     local dist = distance(self, obj, true)
-     if dist < shortest then
-      if (sub(self.attack_info.target_tag,1, 5) == 'enemy' and self.x < obj.x)
-      or (sub(self.attack_info.target_tag,1, 4) == 'ally' and self.x > obj.x) then
-       shortest = dist
-       -- if shortest < self.attack_info.range then 
-        self.attack_info.target = obj
+    local shortest = 10000
+    local sub = sub
+    for obj in all(game_objects) do
+      if sub(obj:get_tag(),1,#self.attack_info.target_tag)  == self.attack_info.target_tag then
+        local dist = distance(self, obj, true)
+        if dist < shortest then
+          -- if (sub(self.attack_info.target_tag,1, 5) == 'enemy' and self.x < obj.x)
+          -- or (sub(self.attack_info.target_tag,1, 4) == 'ally' and self.x > obj.x) then
+          shortest = dist
+          -- if shortest < self.attack_info.range then 
+          self.attack_info.target = obj
+          -- end
+        end
       end
-     end
     end
-   end
   end,
   kill=function(self)
     self.current_health = 0
     spawner.alivee -=1
     -- local side = 1
-    blood_part(self:center('x'), self:center('y')+16, 1, {8})
+    -- blood_part(self:center('x'), self:center('y')+16, 1, {8})
     -- if self.attack_info.target_tag == 'enemy' then side = -1 end
     blood_explosion(self:center('x'), self:center('y'), 50, self.side, {8})
     -- blood_explosion(x, y, quantity, direction, colarr)
@@ -509,7 +485,7 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
       local points = self.max_health + rnd(5)
       -- turret.mana += flr(points)
       -- show_message('+'..flr(points)..'$', self.x, self.y, 11, 3, 5, 2, 'score', true, true)
-      mana_part(self.x, self.y,  main_camera.x-24, main_camera.y-30, flr(points),{12}) 
+      mana_part(self.x, self.y,  main_camera.x-24, main_camera.y-30, flr(points),{11}) 
     end
     sfx(self.sounds.death +flr(rnd(2)))
     -- shake_camera(0.5)
@@ -547,7 +523,7 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
      sfx(self.sounds.hit)
 
      local atk_offset = -10
-     if self:get_target() != nil and self.x < self:get_target().x then atk_offset=10 end
+     if self.x < self:get_target().x then atk_offset=10 end
 
      if  self.attack_info.effect != nil and self.attack_info.effect.state == true then 
       hit_part(self.x+atk_offset/2,self.y+12,{11, 3})
@@ -556,9 +532,8 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
      local bullet = make_bullet(self.x+atk_offset, self.y, self.attack_info.bullet_info.damage, self.attack_info.bullet_info.backoff, 
       self.attack_info.bullet_info.move_speed, self.attack_info.bullet_info.sprite, self.attack_info.target, self.attack_info.bullet_info.tag, self.sprite.powered)
 
-     if bullet != nil then
       bullet:set_target(self:get_target())
-     end
+     
     end
    end
   end,
@@ -568,7 +543,8 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
   end,
   show_health=function(self)
    if self.current_health >= self.max_health then return end
-   spe_rect(self.x+shkx+5,self.y+shky-2, self.x+shkx+10,self.y+shky-2, self.current_health/self.max_health, 5, 11, 0)
+   spe_rect(self.x+shkx+5,self.y+shky-2, self.x+shkx+10,self.y+shky-2, self.current_health/self.max_health, 8, 11, 0)
+
   end,
   draw_sprite=function(self)
     local is_flip_x, atk_offset = false, -8
@@ -581,13 +557,13 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
     if speed >= 32 then speed = 20 end
     local n = flr(time()*speed/3 % #self.sprite.move)+1
     -- draw shadow
-    change_all_pal(2)
-    outline_sspr(self.sprite.move[n].sx, self.sprite.move[n].sy, self.sprite.move[n].sw,
-     self.sprite.move[n].sh, self.x+shkx, self.y+shky+16, 16, 16, is_flip_x, true, 2)
-    pal()
+    -- change_all_pal(2)
+    -- outline_sspr(self.sprite.move[n].sx, self.sprite.move[n].sy, self.sprite.move[n].sw,
+    --  self.sprite.move[n].sh, self.x+shkx, self.y+shky+16, 16, 16, is_flip_x, true, 2)
+    -- pal()
 
-    outline_sspr(self.sprite.move[n].sx, self.sprite.move[n].sy, self.sprite.move[n].sw,
-     self.sprite.move[n].sh, self.x+shkx, self.y+shky, 16, 16, is_flip_x, false)
+    -- outline_sspr(self.sprite.move[n].sx, self.sprite.move[n].sy, self.sprite.move[n].sw,
+    --  self.sprite.move[n].sh, self.x+shkx, self.y+shky, 16, 16, is_flip_x, false)
     pal(14, self.sprite.col1)
     pal(13, self.sprite.col2)
     sspr(self.sprite.move[n].sx, self.sprite.move[n].sy, self.sprite.move[n].sw,
@@ -599,13 +575,13 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
     if n == 1 then atk_offset = 0 end
 
     -- draw shadow
-    change_all_pal(2)
-    outline_sspr(self.sprite.attack[n].sx, self.sprite.attack[n].sy, self.sprite.attack[n].sw,
-     self.sprite.attack[n].sh, self.x+atk_offset+shkx, self.y+shky+16, 16, 16, is_flip_x, true, 2)
-    pal()
+    -- change_all_pal(2)
+    -- outline_sspr(self.sprite.attack[n].sx, self.sprite.attack[n].sy, self.sprite.attack[n].sw,
+    --  self.sprite.attack[n].sh, self.x+atk_offset+shkx, self.y+shky+16, 16, 16, is_flip_x, true, 2)
+    -- pal()
 
-    outline_sspr(self.sprite.attack[n].sx, self.sprite.attack[n].sy, self.sprite.attack[n].sw,
-     self.sprite.attack[n].sh, self.x+atk_offset+shkx, self.y+shky, 16, 16, is_flip_x, false)
+    -- outline_sspr(self.sprite.attack[n].sx, self.sprite.attack[n].sy, self.sprite.attack[n].sw,
+    --  self.sprite.attack[n].sh, self.x+atk_offset+shkx, self.y+shky, 16, 16, is_flip_x, false)
     pal(14, self.sprite.col1)
     pal(13, self.sprite.col2)
     sspr(self.sprite.attack[n].sx, self.sprite.attack[n].sy, self.sprite.attack[n].sw,
@@ -696,7 +672,7 @@ function meteor_ability()
     for obj in all(game_objects) do
 
      if sub(obj:get_tag(),1,5)  == 'enemy' then
-      local dist = distance(self, obj, true)
+      local dist = acccurate_distance(self, obj, true)
        if dist < 10 then 
         obj:take_damage(self.damage)
         sfx(23)
@@ -708,9 +684,11 @@ function meteor_ability()
    end,
    draw=function(self)
     local ry = rnd()-rnd()
-    circ(self.x+shkx,self.y+shky+ry, self.size+2, 2)
+    -- circ(self.x+shkx,self.y+shky+ry, self.size+2, 2)
     circfill(self.x+shkx,self.y+shky+ry, self.size+1, 4)
-    add_part(self.x+shkx+rnd(4)-rnd(4), self.y+shky, 5, rnd(3)+1, rnd(10)+5, 0, 0, {8, 9, 10})
+    if rnd() > 0.8 then
+      add_part(self.x+shkx+rnd(4)-rnd(4), self.y+shky, 5, rnd(3)+1, rnd(10)+5, 0, 0, {8, 9, 10})
+    end
     -- add_part(x, y ,tpe, size, mage, dx, dy, colarr)
    end
    })
@@ -823,52 +801,54 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
     return true
    else return false end
   end,
+  am_i_active=function (self)
+    return self.button_l != button_line and self.button_l != 99
+  end,
   update=function(self)
-   if self.button_l != button_line or (self.tag =='button_lesscooldown' and self.price >= 150) then return end
+   -- if self:am_i_active() or (self.tag =='button_lesscooldown' and self.price >= 150) then return end
 
    if self.current_cooldown <= 0 then self.current_cooldown = 0 else self.current_cooldown -= 1/60 end
 
-   if self.button_l != button_line then return end
+   -- if self:am_i_active() then return end
    if self.current_cooldown <= 0 and turret.mana >= self.price and self:is_mouse_over() and is_mouse_left_click_once() then
     turret.mana -= self.price
     self:action()
    end
   end,
   draw=function(self)
-   if self.button_l != button_line or (self.tag =='button_lesscooldown' and self.price >= 150) then return end
-
-
-   local pc = self.current_cooldown/self.max_cooldown
-   self.c_sprite = flr(time()%#self.sprite)+1
-    -- local n = flr(time()*speed/3 % #self.sprite.move)+1
-
-   -- if pc > 1 then pc = 1 elseif pc < 0 then pc = 0 end 
-   if self.price > turret.mana  then
-    pal(12, 8)
-    pal(1, 2)
-   end
-    spe_print(self.price, main_camera.x+self.x,main_camera.y+self.y-8, 12, 1, 16)
-    -- print(self.price, main_camera.x+self.x,main_camera.y+self.y-8, 11)
-
-    pal()
-
-
-   if self.current_cooldown > 0 then 
-    if self.price > turret.mana then
-     pal(11, 2)
-    else
-     pal(11, 3) 
+    if self:am_i_active() or (self.tag =='button_lesscooldown' and self.price >= 150) then
+      return
     end
 
-   elseif self.price > turret.mana  then 
-    pal(11, 8)
-   elseif self:is_mouse_over() then
+    local pc = self.current_cooldown/self.max_cooldown
+    self.c_sprite = flr(time()%#self.sprite)+1
+    -- local n = flr(time()*speed/3 % #self.sprite.move)+1
+
+    -- if pc > 1 then pc = 1 elseif pc < 0 then pc = 0 end 
+    if self.price > turret.mana  then
+      pal(12, 8)
+      pal(1, 2)
+    end
+    if self.price > 0 then
+      spe_print(self.price, main_camera.x+self.x,main_camera.y+self.y-8, 12, 1, 16)
+    end
+    -- print(self.price, main_camera.x+self.x,main_camera.y+self.y-8, 11)
+    pal()
+    if self.current_cooldown > 0 then 
+      if self.price > turret.mana then
+        pal(11, 2)
+      else
+        pal(11, 3) 
+      end
+    elseif self.price > turret.mana  then 
+      pal(11, 8)
+    elseif self:is_mouse_over() then
       pal(11, 10) 
-   end
-   rect(main_camera.x+self.x,(main_camera.y+self.y)+7*pc,main_camera.x+self.x+7,main_camera.y+self.y+7, 11)
-   -- if self:is_mouse_over() == true then pal(1, 10)  end
-   spr(self.sprite[self.c_sprite], main_camera.x+self.x,main_camera.y+self.y)
-   pal()
+    end
+    rect(main_camera.x+self.x,(main_camera.y+self.y)+7*pc,main_camera.x+self.x+7,main_camera.y+self.y+7, 11)
+    -- if self:is_mouse_over() == true then pal(1, 10)  end
+    spr(self.sprite[self.c_sprite], main_camera.x+self.x,main_camera.y+self.y)
+    pal()
   end
   })
 end
@@ -988,13 +968,13 @@ function make_turret(x, y, tag,sprite)
     --  self.sprite.move[n].sh, self.x+shkx, self.y+shky+16, 16, 16, is_flip_x, true, 2)
 
     -- draw shadow
-    change_all_pal(2)
-    sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky+16, 16, 40, false, true) 
-    outline_sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky+16, 16, 40, false, true,2) 
+    -- change_all_pal(2)
+    -- sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky+16, 16, 40, false, true) 
+    -- outline_sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky+16, 16, 40, false, true,2) 
 
-    pal()
+    -- pal()
 
-   outline_sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky, 16, 32)
+   -- outline_sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky, 16, 32)
    sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky)
   end,
   show_range=function(self)
@@ -1015,6 +995,9 @@ function make_turret(x, y, tag,sprite)
   add_mana=function(self, amount)
    self.mana_tcol=7
    self.mana += amount
+   if self.mana > self.mana_max then 
+    self.mana = self.mana_max 
+   end
    -- self.mana_tcol=12
 
   end,
@@ -1049,54 +1032,54 @@ function spe_rect(x0,y0,x1,y1, pc, back_col, font_col, bordercol)
 end
 -- ##bullet
 function make_bullet(x, y, damage, backoff, move_speed, sprite, target, tag, powered)
- return make_gameobject (x, y, tag, {
-  damage=damage,
-  move_speed=move_speed,
-  sprite=sprite,
-  powered=powered,
-  target=target,
-  direction={x=target.x, y=target.y},
-  update=function(self)
-   if self.target:is_alive() == false then self:disable() end
-   -- self.move_speed *= 0.98
-   self:move_straight()
-   if(distance(self, self.target) <= 5 and self.target:is_alive()) then
-    -- backoff the target
-    -- move_toward(self.target, self, -backoff)
+  return make_gameobject (x, y, tag, {
+    damage=damage,
+    move_speed=move_speed,
+    sprite=sprite,
+    powered=powered,
+    target=target,
+    direction={x=target.x, y=target.y},
+    update=function(self)
+      if self.target:is_alive() == false then self:disable() end
+      -- self.move_speed *= 0.98
+      self:move_straight()
+      if(distance(self, self.target) <= 5 and self.target:is_alive()) then
+      -- backoff the target
+      -- move_toward(self.target, self, -backoff)
 
-    self.target:take_damage(damage)
+      self.target:take_damage(damage)
 
-    self:explode()
-    self:disable()
-   elseif self.target:is_alive() == false then
-    self:disable()
-   end
-  end,
-  explode=function(self)
-    hit_part(self:center('x'),self:center(' y'),{7, 6, 5})
-     if self.target:get_tag()!='player' then sfx(0) end
-  end,
-  set_target=function(self, target)
-   self.target = target
-   self.direction={x=target.x, y=target.y}
-  end,
-  move_straight=function(self)
-   move_toward(self, {x=self.direction.x, y=self.y}, self.move_speed)
-   if(distance(self, self.target) >= 80) then self:explode() self:disable() end
-  end,
-  draw=function(self)
-    -- if time()*6%2 >= 1 then
-    --  pal(9, 2)
-    -- end
-    if self.powered != nil then power_effect(self.x, self.y+8, 4, {7, 6, 5}) end
-    outline_spr(self.sprite, self:center('x')+shkx, self:center('y')+shky)
-    spr(self.sprite, self:center('x')+shkx, self:center('y')+shky)
-    pal()
-  end,
-  reset=function(self)
-   self:enable()
-   
-  end
+      self:explode()
+      self:disable()
+      elseif self.target:is_alive() == false then
+      self:disable()
+      end
+    end,
+    explode=function(self)
+      hit_part(self:center('x'),self:center(' y'),{7, 6, 5})
+      if self.target:get_tag()!='player' then sfx(0) end
+    end,
+    set_target=function(self, target)
+      self.target = target
+      self.direction={x=target.x, y=target.y}
+    end,
+    move_straight=function(self)
+      move_toward(self, {x=self.direction.x, y=self.y}, self.move_speed)
+      if(distance(self, self.target) >= 80) then self:explode() self:disable() end
+    end,
+    draw=function(self)
+      -- if time()*6%2 >= 1 then
+      --  pal(9, 2)
+      -- end
+      if self.powered != nil then power_effect(self.x, self.y+8, 4, {7, 6, 5}) end
+      outline_spr(self.sprite, self:center('x')+shkx, self:center('y')+shky)
+      spr(self.sprite, self:center('x')+shkx, self:center('y')+shky)
+      pal()
+    end,
+    reset=function(self)
+      self:enable()
+
+    end
   })
 end
 
@@ -1110,35 +1093,38 @@ function sortbyy(a)
    end
 end
 
-function change_all_pal(col)
- for i=0, 15 do
-  pal(i, col)
- end
+function change_all_pal(col)  
+  local pal = pal
+  for i=0, 15 do
+    pal(i, col)
+  end
 end
 
 -- the y axis has a default value, 
-function distance(current, target, yaxis)
+function acccurate_distance(current, target, yaxis)
  -- if current == nil or target == nil then return nil end
  local x0, y0, x1, y1 = current.x/100, current.y/100, target.x/100, current.y/100
  if yaxis != nil and yaxis == true then y1 = target.y/100 end
  return sqrt((x1 - x0)^2+(y1 - y0)^2)*100
 end
 
--- function distance(current, target)
---  local x0, y0, x1, y1 = current.x/100, current.y/100, target.x/100, current.y/100
---  local current = {x = x0, y = y0}
---  local target = {x = x1, y = y1}
---  -- if target == nil then return nil end
---  return sqrt(fast_distance(current, target))
--- end
 
--- function distance(current, target)
---  local x0, y0, x1, y1 = current.x/100, current.y/100, target.x/100, current.y/100
---  local current = {x = x0, y = y0}
---  local target = {x = x1, y = y1}
+function distance(current, target, yaxis)
+ local x0, x1 = current.x/100, target.x/100
+ return abs((x1 - x0)*100)
+end
 
---  return ((target.x - current.x)^2 + (target.y - current.y)^2)*100
--- end
+function accurate_move_toward(current, target, move_speed)
+  if(move_speed == 0) then move_speed = 1 end
+
+  local dist= distance(current, target)
+  if dist < 1 then return end
+  local direction_x = (target.x - current.x) / 60 * move_speed
+  local direction_y = (target.y - current.y) / 60 * move_speed
+  current.x += direction_x / dist
+  current.y += direction_y / dist
+  return current.x, current.y
+end
 
 function move_toward(current, target, move_speed)
  if(move_speed == 0) then move_speed = 1 end
@@ -1146,26 +1132,35 @@ function move_toward(current, target, move_speed)
  local dist= distance(current, target)
  if dist < 1 then return end
  local direction_x = (target.x - current.x) / 60 * move_speed
- local direction_y = (target.y - current.y) / 60 * move_speed
- 
- if dist < 1 then dist = 0.25 end
  current.x += direction_x / dist
- current.y += direction_y / dist
+ return current.x, current.y
+end
+
+function move_toward(current, target, move_speed)
+ if(move_speed == 0) then move_speed = 1 end
+ 
+ local dist= distance(current, target)
+ if dist < 1 then return end
+ local direction_x = (target.x - current.x) / 60 * move_speed
+ -- local direction_y = (target.y - current.y) / 60 * move_speed
+ current.x += direction_x / dist
+ -- current.y += direction_y / dist
  return current.x, current.y
 end
 
 function update_all_gameobject()
- for obj in all(game_objects) do
-  obj:update()
- end
+
+  for obj in all(game_objects) do
+    obj:update()
+  end
 end
 
 function draw_all_gameobject()
- sortbyy(game_objects)
- for obj in all(game_objects) do
-
+  local game_objects = game_objects
+  sortbyy(game_objects)
+  for obj in all(game_objects) do
     obj:draw()
- end
+  end
 end
 
 -- ##make_gameobject
@@ -1232,6 +1227,7 @@ function add_part(x, y ,tpe, size, mage, dx, dy, colarr)
  return p
 end
 function update_part()
+ local part = part
  for p in all(part) do
   p.age+=1
   if p.mage != 0 and p.age >= p.mage or (p.size <= 0 and p.mage!=0) then
@@ -1252,8 +1248,8 @@ function update_part()
 end
 function hit_part(x,y,colarr)
   for i=0, rnd(6)+4 do
-  local p add_part(rnd(5)-rnd(5)+x, rnd(5)-rnd(5)+y, 1, rnd(4)+3, rnd(5)+35, (rnd(10)-rnd(10))/30, (rnd(10)-rnd(10))/30, colarr)
- end
+    add_part(rnd(5)-rnd(5)+x, rnd(5)-rnd(5)+y, 1, rnd(4)+3, rnd(5)+35, (rnd(10)-rnd(10))/30, (rnd(10)-rnd(10))/30, colarr)
+  end
 end
 function add_decors(n,x,y, layer)
  local p = add_part(x, y, 10, n, 0, 0, 0, {0})
@@ -1262,15 +1258,15 @@ end
 
 function mana_part(x0, y0, x1, y1, quantity, colarr)
  for i=1, quantity do
-  local p = add_part(rnd(15)-rnd(15)+x0, rnd(15)-rnd(15)+y0, 14, flr(rnd(3))+1, 150, 0, 0, colarr)
+  local p = add_part(rnd(15)-rnd(15)+x0, rnd(15)-rnd(15)+y0, 14, rnd(1)+1, 150, 0, 0, colarr)
   p.col = 7
   p.x1, p.y1 = x1, y1
-  p.speed=rnd(30)
+  p.speed=rnd(50)+20
  end
 end
 
 function circ_part(x, y, size, mage, colarr)
-  local p = add_part(x, y, 12, size, mage, 0, 0, colarr)
+  add_part(x, y, 12, size, mage, 0, 0, colarr)
 end
 
 function power_effect(x, y, quantity, colarr, mage, range)
@@ -1316,7 +1312,7 @@ function layer_convert(layer)
  end
 end
 function draw_part()
-
+ local part = part
  for p in all(part) do
   if p.tpe==0 then
    pset(p.x+shkx, p.y+shky, p.col)
@@ -1352,9 +1348,10 @@ function draw_part()
    -- pset(p.x+shkx, p.y+shky, p.col)
    -- circfill(x,y,r,col)
    circfill(p.x+shkx, p.y+shky, p.size,p.col)
+   -- circ(p.x+shkx, p.y+shky, p.size+1, 1)
    local dist = distance(p, {x=p.x1, y=p.y1}, true)
    -- print(dist, p.x, p.y+3, 0)
-   move_toward(p, {x=p.x1, y=p.y1}, dist*4+p.speed)
+   accurate_move_toward(p, {x=p.x1, y=p.y1}, dist*4+p.speed)
    if dist < 5 then turret:add_mana(1) del(part, p) sfx(15+flr(rnd(3)))  
    end
   end
@@ -1370,22 +1367,28 @@ function search_gameobject(tag)
 end
 
 function outline_spr(n, x, y, _flip_x, _flip_y)
- local out_col = 0
- local flip_x, flip_y = false, false
- if _flip_x then flip_x = _flip_x end
- if _flip_y then flip_y = _flip_y end
+  local out_col = 0
+  local flip_x, flip_y = false, false
+  if _flip_x then flip_x = _flip_x end
+  if _flip_y then flip_y = _flip_y end
 
- for i=0, 15 do pal(i, out_col) end
- spr(n, x+1, y, 1, 1, flip_x, flip_y)
- spr(n, x-1, y, 1, 1, flip_x, flip_y)
- spr(n, x, y+1, 1, 1, flip_x, flip_y)
- spr(n, x, y-1, 1, 1, flip_x, flip_y)
- pal()
+  local pal, spr = pal, spr
+  for i=0, 15 do pal(i, out_col) end
+
+  spr(n, x+1, y, 1, 1, flip_x, flip_y)
+  spr(n, x-1, y, 1, 1, flip_x, flip_y)
+  spr(n, x, y+1, 1, 1, flip_x, flip_y)
+  spr(n, x, y-1, 1, 1, flip_x, flip_y)
+  pal()
 end
 function outline_sspr(sx,sy,sw,sh,dx,dy, dw, dh, flip_x, flip_y, outline_col)
  local out_col = 0
  if outline_col != nil then out_col=outline_col end
+
+ local pal, sspr = pal, sspr
+ 
  for i=0, 15 do pal(i, out_col) end
+ 
  sspr(sx,sy,sw,sh,dx+1,dy, dw, dh, flip_x, flip_y)
  sspr(sx,sy,sw,sh,dx-1,dy, dw, dh, flip_x, flip_y)
  sspr(sx,sy,sw,sh,dx,dy+1, dw, dh, flip_x, flip_y)
@@ -1394,8 +1397,10 @@ function outline_sspr(sx,sy,sw,sh,dx,dy, dw, dh, flip_x, flip_y, outline_col)
 end
 
 -- ##spe_print
+-- give 16 for bordercol if you don't want a bordercolor.
 function spe_print(text, x, y, col_in, col_out, bordercol)
  local outlinecol = 0
+ local print = print
  if bordercol != nil then outlinecol = bordercol end
  if bordercol != 16 then
   -- draw outline color.
@@ -1560,19 +1565,19 @@ ccc1111cccc1111c0000eee00eee000000000eeeee0000000000eee00eee00000000000eeeee0000
 01c7771ccc7771000000000000000000444444440166611001194110017594100194111001182110017582100182111001194110011a91100666111006661110
 01c68877772261000000000000000000444444440000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0116888822226c00422222220000000000000000000000000000000dd0000000000000000000000000000dd00000770000000000007dd7700000000000000000
-0116888822226c00242222420000aaaaaaaaa00000000000000000dddd000000000000dd000000000000dddd000777000000000777dddd770000000000000000
-01c688882222610022222222000aaaaaaaaaa0000cccc000000000dfdd00000000000dddd00000000000dfdd000777700000077777dfdd770000000000000000
-01c68888222261002242222200aaaaaaaaaaa0000ccccc007000000ffd00000000000dfdd000000000000ffd0000077000077777777ffd770000000000000000
-0116888822226c00444442440aaaaaaaaaaaa000011110007770000000000000000000ffd0000000000000000000040000077777477777770000000000000000
-0116888822226c00444444440099aaaaaaaaa0000000000077700eedee00000070000000000000000000edee50000400007777444eedee770000000000000000
-01c68888222261004444444400099aaaaaaaa000000000007770eedddee000007770eedeee0000000000dddeed00400000777744eedddee70000000000000000
-01c168882226115044444444000099999999900000000000704000dd5dd00000777eedddee0000000000ddddd0f400000777444444dd5dd00000000000000000
+0116888822226c00242222420000aaaaaaaaaaa000000000000000dddd000000000000dd000000000000dddd000777000000000777dddd770000000000000000
+01c688882222610022222222000a999a999a99990cccc000000000dfdd00000000000dddd00000000000dfdd000777700000077777dfdd770000000000000000
+01c68888222261002242222200a999a999a999990ccccc007000000ffd00000000000dfdd000000000000ffd0000077000077777777ffd770000000000000000
+0116888822226c00444442440a999a999a999999011110007770000000000000000000ffd0000000000000000000040000077777477777770000000000000000
+0116888822226c004444444400499949994999990000000077700eedee00000070000000000000000000edee50000400007777444eedee770000000000000000
+01c6888822226100444444440004999499944444000000007770eedddee000007770eedeee0000000000dddeed00400000777744eedddee70000000000000000
+01c168882226115044444444000044444444444000000000704000dd5dd00000777eedddee0000000000ddddd0f400000777444444dd5dd00000000000000000
 011c68882226cc570000000000000000000000000000000000400505ddd0000077700dd5d0000000000000ddd5df0000077744444575ddd00000000000000000
 011cc688226ccc57000000000000000000000000000000000004d0d0ddd000007040505dd0000000000000ddd040000007774444d4d0ddd00000000000000000
-01c116882261115000000000000b3000bbbbbbb3000000000004ff00555000000040ddddd000000000000055500000000777744df00055500000000000000000
+01c116882261115000000000000b30000bbbbb30000000000004ff00555000000040ddddd000000000000055500000000777744df00055500000000000000000
 01c1116826c111000000000000bbb3000bbbbb3000000000000d400dddd00000000400d550000000000000ddd000000000777440d000ddd00000000000000000
 011cccc6611ccc00000000000bbbbb3000bbb30000000000000040dd0dd00000000f005ddd00000000000d00d000000000777000000d00d00000000000000000
-011cccc1111ccc0000000000bbbbbbb3000b3000000000000000005000d5d7000000400055000000000050000500000000000000005000050000000000000000
+011cccc1111ccc00000000000bbbbb30000b3000000000000000005000d5d7000000400055000000000050000500000000000000005000050000000000000000
 1cc1111cccc111100000000000000000000000000000000000070d000000070000004000dd0000000000d0000d0000000000000000d0000d0000000000000000
 ccc1111cccc1111c0000000000000000000000000000000000007000000000000000000777000000000770007700000000000000077000770000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000007000000000777777000000000077777700000000000000000
