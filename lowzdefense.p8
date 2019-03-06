@@ -10,7 +10,7 @@ do_once ,left_click_once_timer, modx, mody, button_line = 'start',{},{},
  0 ,0, false,nil,0, false,0,0,0,0
 
 local left_map_limit, right_map_limit = 20, 200
-local debugmode = false
+local debugmode = true
 local main_camera,mouse,turret,enemy_tower
 
 local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=15, alivee=0, enemy_limit = 20}}
@@ -53,19 +53,20 @@ function _draw()
   end
 
   if (debugmode) then
-      -- print('fps:'..stat(7),main_camera.x+ 0, 11+main_camera.y, 11, 3)
-      print('obj:'..#game_objects, main_camera.x-21, main_camera.y-5, 8, 2)
-      -- print('time:'..flr(time()/2),main_camera.x-64, main_camera.y-64, 8, 2)
-      -- print('e:'..spawner.alivee,main_camera.x-30, 30 +main_camera.y, 8, 2)
+    if (btn(5)) shake_v(1)
+    -- print('fps:'..stat(7),main_camera.x+ 0, 11+main_camera.y, 11, 3)
+    print('obj:'..#game_objects, main_camera.x-20, main_camera.y+65, 10)
+    -- print('time:'..flr(time()/2),main_camera.x-64, main_camera.y-64, 8, 2)
+    -- print('e:'..spawner.alivee,main_camera.x-30, 30 +main_camera.y, 8, 2)
 
-      -- print('mem_use:'..stat(0),main_camera.x+ 0, 30+main_camera.y, 8, 2)
-      print('cpu:'..stat(1),main_camera.x-25, 0+main_camera.y, 9, 4)
-      -- print('particles:'..#part,main_camera.x+ 0, 50+main_camera.y, 8, 2)
-      -- spe_print('sys_cpu:'..stat(2),main_camera.x+ 0, 50+main_camera.y, 8, 2)
+    -- print('mem_use:'..stat(0),main_camera.x+ 0, 30+main_camera.y, 8, 2)
+    print('cpu:'..stat(1),main_camera.x-20, main_camera.y+75, 12)
+    -- print('particles:'..#part,main_camera.x+ 0, 50+main_camera.y, 8, 2)
+    -- spe_print('sys_cpu:'..stat(2),main_camera.x+ 0, 50+main_camera.y, 8, 2)
 
-      -- spe_print(main_camera.x, main_camera.x, main_camera.y, 8, 2)
-      -- spe_print(main_camera.y, main_camera.x, main_camera.y, 8, 2)
-      print(spawner.alivee, mouse.x, mouse.y-8, 0)
+    -- spe_print(main_camera.x, main_camera.x, main_camera.y, 8, 2)
+    -- spe_print(main_camera.y, main_camera.x, main_camera.y, 8, 2)
+    print(spawner.alivee, mouse.x, mouse.y-8, 0)
 
   end
 
@@ -91,7 +92,7 @@ function init_all_gameobject()
  init_decors()
 
  local space_between = 14
- local pos_x, pos_y = -45, 23 
+ local pos_x, pos_y = -45, 45 
 -- buttons.
 -- line 0
  make_button(pos_x+space_between, pos_y, 3, {86}, 15,'button_unit1', 0)
@@ -106,7 +107,7 @@ function init_all_gameobject()
  make_button(pos_x+space_between, pos_y, 3, {94, 78}, 50,'button_manaregen', 1)
  make_button(pos_x+space_between*2, pos_y, 3,{95, 79}, 50,'button_manamax', 1)
  make_button(pos_x+space_between*3, pos_y, 3, {85, 69}, 100,'button_lesscooldown', 1)
- make_button(87, pos_y, 60, {77}, 0,'button_meteor', 99)
+ make_button(87, pos_y, 40, {77}, 0,'button_meteor', 99)
  -- make_button(10, pos_y, 3, 93, 100,'button_manamax', 1)
  -- make_button(-20, pos_y, 5,87, 20,'button_unit2', 1)
  -- make_button(-9, pos_y, 12,88, 35,'button_unit3', 1)
@@ -183,7 +184,7 @@ end
 
 function whiteframe_update()
  if whiteframe == true then
-  rectfill(-100,-100, 200, 200, 7)
+  rectfill(-100,-100, 200, 200, 0)
   whiteframe = false
  end
 end
@@ -193,7 +194,27 @@ function start_game()
 end
 
 function draw_map()
- map(0, 0, -86+shkx, 0+shky, 60, 8)
+  -- sky
+  local x0, y0, x1, y1, col = -33, 0, 96, 10, 12
+  rectfill(main_camera.x+shkx+x0, shky+y0, main_camera.x+shkx+x1, shky+y1, col)
+  
+  -- tree background
+  x0, y0, x1, y1, col = -33, 10, 96, 30, 1
+  rectfill(main_camera.x+shkx+x0, shky+y0, main_camera.x+shkx+x1, shky+y1, col)
+  
+  -- ground
+  x0, y0, x1, y1, col = -33, 30, 96, 60, 4
+  rectfill(main_camera.x+shkx+x0, shky+y0, main_camera.x+shkx+x1, shky+y1, col)
+  
+  -- ground path
+  x0, y0, x1, y1, col = 0, 37, 276, 43, 2
+  rectfill(main_camera.x+shkx+x0, shky+y0, main_camera.x+shkx+x1, shky+y1, col)
+  
+  -- buttons background
+  x0, y0, x1, y1, col = -33, 30, 96, 55, 5
+  rectfill(main_camera.x+shkx+x0, main_camera.y+shky+y0, main_camera.x+shkx+x1, main_camera.y+shky+y1, col)
+  
+  -- map(0, 0, -86+shkx, 0+shky, 60, 6)
 end
 
 function draw_start()
@@ -212,28 +233,29 @@ end
 
 
 function draw_game()
- cls()
- draw_map()
- draw_part()
- draw_all_gameobject()
- 
- draw_camera_button()
+  cls()
+  draw_map()
+  draw_part()
+  draw_all_gameobject()
 
- whiteframe_update()
+  draw_camera_button()
 
- draw_mouse_cursor()
- -- print(#part, 20, 20, 8)
+  whiteframe_update()
+
+  draw_mouse_cursor()
+  -- print(#part, 20, 20, 8)
+  -- do_camera_shake()
 
 
 end
 function update_game()
   update_part()
-  do_camera_shake()
   random_enemy_spawning()
   update_all_gameobject()
   camera_follow()
 
   is_mouse_left_click_once()
+  do_camera_shake()
 
   if btn(0) and main_camera.x > left_map_limit then main_camera.x -= 1 end
   if btn(1) and main_camera.x < right_map_limit then main_camera.x += 1 end
@@ -381,7 +403,7 @@ function make_tower(x, y, tag, health, sprite)
   take_damage=function(self, damage)
     whiteframe=true
     self.current_health-= damage
-    shake_camera(0.25)
+    shake_v(0.25)
     if rnd() > 0.80 then
       make_enemy(flr(rnd(4)))
     end
@@ -452,7 +474,7 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
    if self.attack_info.target_tag == 'enemy' then self.side = -1 end
    blood_explosion(self:center('x'), self:center('y'), damage, self.side, {8})
 
-   -- shake_camera(1)
+   -- shake_v(1)
    return true
   end,
   find_target=function(self)
@@ -488,7 +510,7 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
       mana_part(self.x, self.y,  main_camera.x-24, main_camera.y-30, flr(points),{11}) 
     end
     sfx(self.sounds.death +flr(rnd(2)))
-    -- shake_camera(0.5)
+    -- shake_v(0.5)
 
     self:disable()
   end,
@@ -652,7 +674,7 @@ function enemy_repost(n)
 end
 
 function meteor_ability()
- for i=-2, 10 do
+ for i=-2, 15 do
 
   make_gameobject(i*20+rnd(5), -rnd(30)-10, 'meteor', {
    speed=10+rnd(15),
@@ -663,7 +685,7 @@ function meteor_ability()
     sfx(-1, 0)
    end,
    update=function(self)
-    shake_camera(0.05)
+    shake_v(0.05)
     sfx(22, 0)
     if self.y > 38 then self:kill() end
     self.x += self.speed/25
@@ -787,6 +809,13 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
      if sub(obj:get_tag(), 0, 6) == 'button' and obj:get_tag() != 'button_meteor' and obj.max_cooldown > 0.5 then obj.current_cooldown *=0.5 obj.max_cooldown *= 0.5  end
      -- if obj:get_tag()== 'button_lesscooldown' then obj.current_cooldown *=0.5 obj.max_cooldown *= 0.5  end
     end
+    
+    if (self.price < 150) then 
+      self.price += 50
+    else
+      del(game_objects, self)
+    end
+
    elseif sub(self.tag, 8, 14) == 'meteor' then
     sfx(11)
     meteor_ability()
@@ -801,39 +830,20 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
     return true
    else return false end
   end,
-  am_i_active=function (self)
-    return self.button_l != button_line and self.button_l != 99
-  end,
-  update=function(self)
-   -- if self:am_i_active() or (self.tag =='button_lesscooldown' and self.price >= 150) then return end
 
-   if self.current_cooldown <= 0 then self.current_cooldown = 0 else self.current_cooldown -= 1/60 end
-
-   -- if self:am_i_active() then return end
-   if self.current_cooldown <= 0 and turret.mana >= self.price and self:is_mouse_over() and is_mouse_left_click_once() then
-    turret.mana -= self.price
-    self:action()
-   end
-  end,
-  draw=function(self)
-    if self:am_i_active() or (self.tag =='button_lesscooldown' and self.price >= 150) then
-      return
-    end
-
-    local pc = self.current_cooldown/self.max_cooldown
-    self.c_sprite = flr(time()%#self.sprite)+1
-    -- local n = flr(time()*speed/3 % #self.sprite.move)+1
-
-    -- if pc > 1 then pc = 1 elseif pc < 0 then pc = 0 end 
+  display_price = function (self)
     if self.price > turret.mana  then
       pal(12, 8)
       pal(1, 2)
     end
-    if self.price > 0 then
-      spe_print(self.price, main_camera.x+self.x,main_camera.y+self.y-8, 12, 1, 16)
+    if self.price > 0 then  
+      spe_print(self.price, main_camera.x+self.x, main_camera.y+self.y-8, 12, 1, 16)
     end
-    -- print(self.price, main_camera.x+self.x,main_camera.y+self.y-8, 11)
     pal()
+  end,
+  draw_sprite = function(self)
+    local pc = self.current_cooldown/self.max_cooldown
+
     if self.current_cooldown > 0 then 
       if self.price > turret.mana then
         pal(11, 2)
@@ -843,12 +853,37 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
     elseif self.price > turret.mana  then 
       pal(11, 8)
     elseif self:is_mouse_over() then
-      pal(11, 10) 
+      pal(11, 10)
     end
     rect(main_camera.x+self.x,(main_camera.y+self.y)+7*pc,main_camera.x+self.x+7,main_camera.y+self.y+7, 11)
-    -- if self:is_mouse_over() == true then pal(1, 10)  end
+    self.c_sprite = flr(time()%#self.sprite)+1
     spr(self.sprite[self.c_sprite], main_camera.x+self.x,main_camera.y+self.y)
     pal()
+  end,
+  am_i_displayed=function (self)
+    return self.button_l == button_line or self.button_l == 99
+  end,
+  -- am_i_active = function(self)
+  --   return self:am_i_displayed() or (self.tag =='button_lesscooldown' and self.price >= 150)
+  -- end,
+  update=function(self)
+
+   if self.current_cooldown <= 0 then self.current_cooldown = 0 else self.current_cooldown -= 1/60 end
+
+   if not self:am_i_displayed() then return end
+
+   if self.current_cooldown <= 0 and turret.mana >= self.price and self:is_mouse_over() and is_mouse_left_click_once() then
+    turret.mana -= self.price
+    self:action()
+   end
+  end,
+  draw=function(self)
+    if not self:am_i_displayed() then
+      return
+    end
+
+    self:display_price()
+    self:draw_sprite()
   end
   })
 end
@@ -895,7 +930,7 @@ function make_turret(x, y, tag,sprite)
   take_damage=function(self, damage)
    -- whiteframe=true
    self.current_health-= damage
-   -- shake_camera(0.01)
+   -- shake_v(0.01)
    return true
   end,
   find_target=function(self)
@@ -1399,26 +1434,27 @@ end
 -- ##spe_print
 -- give 16 for bordercol if you don't want a bordercolor.
 function spe_print(text, x, y, col_in, col_out, bordercol)
- local outlinecol = 0
- local print = print
- if bordercol != nil then outlinecol = bordercol end
- if bordercol != 16 then
-  -- draw outline color.
-  print(text, x-1+shkx, y+shky, outlinecol)
-  print(text, x+1+shkx, y+shky, outlinecol)
-  print(text, x+1+shkx, y-1+shky, outlinecol)
-  print(text, x-1+shkx, y-1+shky, outlinecol)
-  print(text, x+shkx, y-1+shky, outlinecol)
-  print(text, x+1+shkx, y+1+shky, outlinecol)
-  print(text, x-1+shkx, y+1+shky, outlinecol)
-  print(text, x+1+shkx, y+2+shky, outlinecol)
-  print(text, x-1+shkx, y+2+shky, outlinecol)
-  print(text, x+shkx, y+2+shky, outlinecol)
- end
--- draw col_out.
- print(text, shkx+x, shky+y+1, col_out)
- -- draw text.
- print(text, shkx+x, shky+y, col_in)
+  local outlinecol = 0
+  local print = print
+  if bordercol != nil then outlinecol = bordercol end
+  if bordercol != 16 then
+    -- draw outline color.
+    print(text, x-1, y, outlinecol)
+    print(text, x+1, y, outlinecol)
+    print(text, x+1, y-1, outlinecol)
+    print(text, x-1, y-1, outlinecol)
+    print(text, x, y-1, outlinecol)
+    print(text, x+1, y+1, outlinecol)
+    print(text, x-1, y+1, outlinecol)
+    print(text, x+1, y+2, outlinecol)
+    print(text, x-1, y+2, outlinecol)
+    print(text, x, y+2, outlinecol)
+  end
+
+  -- draw col_out.
+  print(text, x, y+1, col_out)
+  -- draw text.
+  print(text, x, y, col_in)
 end
 
 function shake_camera(power)
@@ -1566,7 +1602,7 @@ ccc1111cccc1111c0000eee00eee000000000eeeee0000000000eee00eee00000000000eeeee0000
 01c68877772261000000000000000000444444440000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0116888822226c00422222220000000000000000000000000000000dd0000000000000000000000000000dd00000770000000000007dd7700000000000000000
 0116888822226c00242222420000aaaaaaaaaaa000000000000000dddd000000000000dd000000000000dddd000777000000000777dddd770000000000000000
-01c688882222610022222222000a999a999a99990cccc000000000dfdd00000000000dddd00000000000dfdd000777700000077777dfdd770000000000000000
+01c688882222610022222222000a999a999aaaaa0cccc000000000dfdd00000000000dddd00000000000dfdd000777700000077777dfdd770000000000000000
 01c68888222261002242222200a999a999a999990ccccc007000000ffd00000000000dfdd000000000000ffd0000077000077777777ffd770000000000000000
 0116888822226c00444442440a999a999a999999011110007770000000000000000000ffd0000000000000000000040000077777477777770000000000000000
 0116888822226c004444444400499949994999990000000077700eedee00000070000000000000000000edee50000400007777444eedee770000000000000000
