@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 16
+version 18
 __lua__
 
 -- lowrez defense
@@ -10,7 +10,7 @@ do_once ,left_click_once_timer, modx, mody, button_line = 'start',{},{},
  0 ,0, false,nil,0, false,0,0,0,0
 
 local left_map_limit, right_map_limit = 20, 200
-local debugmode = false
+local debugmode = true
 local main_camera,mouse,turret,enemy_tower
 
 local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=15, alivee=0, enemy_limit = 20}}
@@ -53,7 +53,13 @@ function _draw()
   end
 
   if (debugmode) then
+    if mode == 'game' and btn(4) then turret.mana_max += 5 turret.mana += 5 end
     if (btn(5)) shake_v(1)
+    if mode == 'game' and btnp(4) then
+     make_unit(50, 32, 'enemy_unit1', 1000, 0,
+  {class='melee', target_tag='ally', target=turret, damage=0, range=16, timer=0, attack_speed=1}, {hit=4, death=8},{move={{sx=16, sy=0, sw=16, sh=16},{sx=32, sy=0, sw=16, sh=16}},
+  attack={{sx=46, sy=0, sw=16, sh=16}, {sx=64, sy=0, sw=16, sh=16}}, col1=3, col2=1})
+    end
     -- print('fps:'..stat(7),main_camera.x+ 0, 11+main_camera.y, 11, 3)
     print('obj:'..#game_objects, main_camera.x-20, main_camera.y+65, 10)
     -- print('time:'..flr(time()/2),main_camera.x-64, main_camera.y-64, 8, 2)
@@ -213,7 +219,7 @@ function draw_map()
   
   -- buttons background
   x0, y0, x1, y1, col = -33, 30, 96, 55, 5
-  rectfill(main_camera.x+shkx+x0, main_camera.y+shky+y0, main_camera.x+shkx+x1, main_camera.y+shky+y1, col)
+  rectfill(main_camera.x+x0, main_camera.y+y0, main_camera.x+x1, main_camera.y+y1, col)
   
   -- map(0, 0, -86+shkx, 0+shky, 60, 6)
 end
@@ -579,8 +585,6 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
     local speed = self.move_speed
     if speed >= 32 then speed = 20 end
     local n = flr(time()*speed/3 % #self.sprite.move)+1
-    -- draw shadow
-    sspr(80, 0, 10, 3, self.x+3, self.y+16)
     -- change_all_pal(2)
     -- outline_sspr(self.sprite.move[n].sx, self.sprite.move[n].sy, self.sprite.move[n].sw,
     --  self.sprite.move[n].sh, self.x+shkx, self.y+shky+16, 16, 16, is_flip_x, true, 2)
@@ -590,6 +594,7 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
     --  self.sprite.move[n].sh, self.x+shkx, self.y+shky, 16, 16, is_flip_x, false)
     pal(14, self.sprite.col1)
     pal(13, self.sprite.col2)
+    -- sspr(sx,sy,sw,sh,dx,dy,dw,dh,flip_x,flip_y)
     sspr(self.sprite.move[n].sx, self.sprite.move[n].sy, self.sprite.move[n].sw,
      self.sprite.move[n].sh, self.x+shkx, self.y+shky, 16, 16, is_flip_x, false)
     pal()
@@ -597,7 +602,7 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
    else
     local n = flr(time()/(self.attack_info.attack_speed/2) % #self.sprite.attack)+1
     if n == 1 then atk_offset = 0 end
-
+    if self.attack_info.class == 'distance' then atk_offset = 4 end
     -- draw shadow
     -- change_all_pal(2)
     -- outline_sspr(self.sprite.attack[n].sx, self.sprite.attack[n].sy, self.sprite.attack[n].sw,
@@ -614,6 +619,8 @@ function make_unit(x, y, tag, health, move_speed, atk_info, sounds, sprite)
 
     if self.sprite.powered then power_effect(self.x+abs(atk_offset)+shkx, self.y+shky+6, 1, {7, self.sprite.col1, self.sprite.col2}) end
    end
+    -- draw shadow
+    sspr(80, 0, 14, 3, self.x+3, self.y+16)
 
   end,
   update=function(self)
@@ -638,7 +645,7 @@ function make_enemy(n)
  hit_part(spawn_posx+8, spawn_posy+8, {11, 3, 2})
  -- spawner.alivee += 1
  if n == 1 then
- make_unit(spawn_posx, spawn_posy, 'enemy_unit1', 4, 12,
+ make_unit(spawn_posx, spawn_posy, 'enemy_unit1', 4, 18,
   {class='melee', target_tag='ally', target=turret, damage=1, range=16, timer=0, attack_speed=1}, {hit=4, death=8},{move={{sx=16, sy=0, sw=16, sh=16},{sx=32, sy=0, sw=16, sh=16}},
   attack={{sx=46, sy=0, sw=16, sh=16}, {sx=64, sy=0, sw=16, sh=16}}, col1=3, col2=1})
  elseif n == 2 then
@@ -732,35 +739,34 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
   max_cooldown=cooldown,
   button_info={timer=0, reload_time=1},
   action=function(self)
-   
    self.current_cooldown = self.max_cooldown
    local pr, posx, posy= rnd(3)-rnd(3), -10, 24
    hit_part(posx+4, posy+8, {7, 6, 5, 1})
    if sub(self.tag, 8, 13) == 'unit1' then
     sfx(12)
-    make_unit(posx, posy+pr, 'ally_unit1', 4, 8, 
-     {class='melee', target_tag='enemy', target=nil, damage=1, range=16, timer=0, attack_speed=1},
+    make_unit(posx, posy+pr, 'ally_unit1', 4, 14, 
+     {class='melee', target_tag='enemy', target=nil, damage=0.25, range=16, timer=0, attack_speed=0.25},
       {hit=5, death=6},{move={{sx=32, sy=64, sw=16, sh=16},{sx=48, sy=64, sw=16, sh=16}},
        attack={{sx=64, sy=64, sw=16, sh=16}, {sx=80, sy=64, sw=16, sh=16}}, col1=8, col2=6})
     enemy_repost(1)
    elseif sub(self.tag, 8, 13) == 'unit2' then
     sfx(12)
-    make_unit(posx, posy+pr, 'ally_unit2', 2, 12, 
+    make_unit(posx, posy+pr, 'ally_unit2', 2, 18, 
      {class='distance', bullet_info={damage=2, sprite=47, move_speed=300, backoff=0, tag='bullet3'},
-      target_tag='enemy', target=nil, damage=1, range=45, timer=0, attack_speed=2},
+      target_tag='enemy', target=nil, damage=0.25, range=45, timer=0, attack_speed=0.5},
       {hit=5, death=6},{move={{sx=32, sy=80, sw=16, sh=16},{sx=48, sy=80, sw=16, sh=16}},
        attack={{sx=64, sy=80, sw=16, sh=16}, {sx=80, sy=80, sw=16, sh=16}}, col1=11, col2=3})
     enemy_repost(2)
    elseif sub(self.tag, 8, 13) == 'unit3' then
     sfx(12)
-    make_unit(posx, posy+pr, 'ally_unit3', 20, 9, 
+    make_unit(posx, posy+pr, 'ally_unit3', 20, 15, 
      {class='melee', target_tag='enemy', target=nil, damage=3, range=16, timer=0, attack_speed=2},
       {hit=5, death=6},{move={{sx=48, sy=48, sw=16, sh=16},{sx=64, sy=48, sw=16, sh=16}},
        attack={{sx=80, sy=48, sw=16, sh=16}, {sx=96, sy=48, sw=16, sh=16}}, col1=1, col2=6})
     enemy_repost(3)
    elseif sub(self.tag, 8, 13) == 'unit4' then
     sfx(20)
-    make_unit(posx, posy+pr, 'ally_unit4', 16, 16, 
+    make_unit(posx, posy+pr, 'ally_unit4', 16, 21, 
      {class='melee', target_tag='enemy', target=nil, damage=2, range=16, timer=0, attack_speed=0.5 },
       {hit=5, death=6},{move={{sx=32, sy=64, sw=16, sh=16},{sx=48, sy=64, sw=16, sh=16}},
        attack={{sx=64, sy=64, sw=16, sh=16}, {sx=80, sy=64, sw=16, sh=16}}, col1=12, col2=1, powered=true})
@@ -783,7 +789,7 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
     enemy_repost(5)
    elseif sub(self.tag, 8, 13) == 'unit7' then
    sfx(20)
-    make_unit(posx, posy+pr, 'ally_unit7', 32, 12, 
+    make_unit(posx, posy+pr, 'ally_unit7', 32, 10, 
      {class='distance', bullet_info={damage=6, sprite=223, move_speed=100, backoff=0, tag='bullet5', powered=true},
       target_tag='enemy', target=nil, damage=1, range=45, timer=0, attack_speed=2},
       {hit=5, death=6},{move={{sx=56, sy=112, sw=16, sh=16},{sx=72, sy=112, sw=16, sh=16}},
@@ -792,7 +798,7 @@ function make_button(x, y, cooldown, sprite, price, tag, button_l)
     enemy_repost(5)
    elseif sub(self.tag, 8, 13) == 'unit8' then
    sfx(20)
-    make_unit(posx, posy+pr, 'ally_unit8', 8, 64, 
+    make_unit(posx, posy+pr, 'ally_unit8', 8, 32, 
      {class='melee', target_tag='enemy', target=nil, damage=6, range=16, timer=0, attack_speed=0.25 },
       {hit=5, death=6},{move={{sx=32, sy=64, sw=16, sh=16},{sx=48, sy=64, sw=16, sh=16}},
        attack={{sx=64, sy=64, sw=16, sh=16}, {sx=80, sy=64, sw=16, sh=16}}, col1=10, col2=8, powered=true})
@@ -966,7 +972,7 @@ function make_turret(x, y, tag,sprite)
   end,
   can_attack=function(self)
    if self:get_target() != nil and distance(self, self:get_target()) < self.attack_info.range and time() >= self.attack_info.timer then return true
-   else return false end
+   else self.attack_info.target = nil return false end
   end,
   get_target=function(self)
    return self.attack_info.target
@@ -998,20 +1004,6 @@ function make_turret(x, y, tag,sprite)
   draw_sprite=function(self)
     local n = flr(time() % #self.sprite)+1
 
-    -- local n = flr(time()*self.move_speed/3 % #self.sprite.move)+1ù
-    -- -- draw shadow
-    -- change_all_pal(2)
-    -- outline_sspr(self.sprite.move[n].sx, self.sprite.move[n].sy, self.sprite.move[n].sw,
-    --  self.sprite.move[n].sh, self.x+shkx, self.y+shky+16, 16, 16, is_flip_x, true, 2)
-
-    -- draw shadow
-    -- change_all_pal(2)
-    -- sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky+16, 16, 40, false, true) 
-    -- outline_sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky+16, 16, 40, false, true,2) 
-
-    -- pal()
-
-   -- outline_sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky, 16, 32)
    sspr(self.sprite[n].x0, self.sprite[n].y0, self.sprite[n].x1, self.sprite[n].y1, x+shkx, y+shky)
   end,
   show_range=function(self)
@@ -1554,17 +1546,17 @@ end
 
 
 __gfx__
-00000000000000000000000000000000000000000000000000000000eff00e0e00000000000000000111111110000000000000000000000000ccaa9988bb0000
-0000000a0a0a0000000000eff0000000000000000000000000000000eef00e0e00000000000000001111111111000000008208820882082000ccaa9988bb0000
-01000000aaa00000000000eef000000000000eff0000000000000000eee0e00e000000000000000001111111100000000022288b3888882000ccaa9988bb0000
+00000000000000000000000000000000000000000000000000000000eff00e0e00000000000000000111111111100000000000000000000000ccaa9988bb0000
+0000000a0a0a0000000000eff0000000000000000000000000000000eef00e0e00000000000000001111111111110000008208820882082000ccaa9988bb0000
+01000000aaa00000000000eef000000000000eff0000000000000000eee0e00e000000000000000001111111111000000022288b3888882000ccaa9988bb0000
 01c0000099900000000000eee000000000000eef00000000000000000000e0e00000eff00000000000000000000000000088bb38b3b3882000ccaa9988bb0000
 01100000f4f0f00000ee00000000000000000eee00000000000000000ee000e00000eef000000000000000000000000000888bb3b38b322000ccaa9988bb0000
 01100000f440f000000eee00ee0000000ee000000000000000000000eeee0e0000e0eee0000000000000000000000000002228b3b38b322000ccaa9988bb0000
 01c0000888af01000000000eee00000000eee00ee00000000000000002eee000000eee0ee00000000000000000000000002b38bbbbbb3b2000ccaa9988bb0000
 01c0008888a1110000000ee02ee000000000000eee000000000000000eeee000000000eeee0000000000000000000000002bb3bbbbb3b3200011994422bb0000
-0110088889a1cc0000eee000eee0000000000002ee00000000000000002e000000000002eee0000001111111111000000088bbbb3bbb32200011994422bb0000
-011008888aa1cc000000000002e000000000ee0eee0000000000000000ee000000000e0eeee00000111111111111000000888bb3bbbb32200011994422bb0000
-01c01cc89cc11100000000000ee000000eee00002e00000000000000deeee00000eee0002e0000000111111111100000002228b3bbb388200011994422bb0000
+0110088889a1cc0000eee000eee0000000000002ee00000000000000002e000000000002eee0000001111111100000000088bbbb3bbb32200011994422bb0000
+011008888aa1cc000000000002e000000000ee0eee0000000000000000ee000000000e0eeee00000111111111100000000888bb3bbbb32200011994422bb0000
+01c01cc89cc11100000000000ee000000eee00002e00000000000000deeee00000eee0002e0000000111111110000000002228b3bbb388200011994422bb0000
 01c1111cccc1110000000000ddd0000000000000ee0000000000000e000dd000000000e0ee0dd0000000000000000000002228bbbb3388200011994422bb0000
 011cccc1111ccc00000000ed00e0000000000000e00000000000000d0000e000000000d00000e0000000000000000000008882bbbbb382200011994422bb0000
 0117ccc1111c7c00000000d0000d000000000000dd0000000000000d0000d000000000d00000d0000000000000000000008882bbbbb382200000000000000000
@@ -1642,11 +1634,11 @@ ccc1111cccc1111c0000000000000000000000000000000000007000000000000000000777000000
 0000003333333333333333330000000004000eedee04400000400000000040000000400ee7dee044000040700000007407000ee6ee0000000000000000000000
 000000333333333333333330000000000400ee5d5ee4400004000eedee04400000040dd007d5ee440000407deedee0440700ee666ee000007000ee6eee000000
 00000012333333333333300000000000004070dd755440000400ee5d5ee4400007444444447755440004dd7000d5ee440070006656600000700ee666ee000000
-00000012333333333333100000000000004f0d77ddd44000004070dd7554400000040000070ddd44000f0070000d554400700505666000007700066566000000
+00000012333333333333100000000000004f0d77ddd44000004070dd7554400000040000070ddd44000f007000ff554400700505666000007700066566000000
 000000122213333213221000000000000004f000ddd44000004f0d77ddd4400000004000070ddd4400040070000ddd4400076060666000000700505660000000
-0000001222121222122210000000000000404000777000000004f000ddd44000000040007007770000004070000dfd440006ff00555000000700666660000000
-0000001222121222122210000000000007000444ddd0000000400444ddd0000000000407000ddd00000040700007f7000000e000666000000076006550000000
-000000122212122212221000000000000000000d00d00000070000000dd000000000047700d00d0000000470000dfd0000000e0600600000007ff05666000000
+0000001222121222122210000000000000404000777000000004f000ddd44000000040007007770000004070000ddd440006ff00555000000700666660000000
+0000001222121222122210000000000007000444ddd0000000400444ddd0000000000407000ddd0000004070000777000000e000666000000076006550000000
+000000122212122212221000000000000000000d00d00000070000000dd000000000047700d00d0000000470000ddd0000000e0600600000007ff05666000000
 00000012221212221222100000000000000000f0000f4400000000000ff00000000000000f0000f0000004700fd00df000000050000567000006e00055000000
 000000122212122212221000000000000004040000000400000000000440000000000000040000400000000004000040000706000000070000000e0066000000
 00000012221212221222100000000000000040000000000000000000444000000000000044000440000000004400044000007000000000000000000777000000
