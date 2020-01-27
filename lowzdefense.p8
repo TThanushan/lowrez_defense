@@ -15,7 +15,8 @@ local main_camera,mouse,turret,enemy_tower
 
 local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=15, alivee=0, enemy_limit = 20}}
 local is_camera_button_left_hover, is_camera_button_right_hover = false, false
-
+local camera_left_b = {x=28, y=50}
+local camera_right_b = {x=75, y=50}
 function _init()
 
  -- poke(0x5f2c,3)
@@ -190,7 +191,7 @@ end
 
 function whiteframe_update()
  if whiteframe == true then
-  rectfill(-100,-100, 200, 200, 0)
+  rectfill(-100+main_camera.x,-100, 200+main_camera.x, 200, 0)
   whiteframe = false
  end
 end
@@ -247,7 +248,7 @@ function draw_game()
 
   draw_camera_button()
 
-  whiteframe_update()
+  -- whiteframe_update()
 
   draw_mouse_cursor()
   -- print(#part, 20, 20, 8)
@@ -336,7 +337,7 @@ function draw_camera_button()
     pal(9, 10)
     pal(4, 9)
   end
-  sspr(25, 49, 16, 7, main_camera.x-28, 13)
+  sspr(25, 49, 16, 7, main_camera.x-camera_left_b.x, camera_left_b.y)
   pal()
 
   -- right
@@ -346,7 +347,8 @@ function draw_camera_button()
     pal(9, 10)
     pal(4, 9)
   end
-  sspr(25, 49, 16, 7, main_camera.x+75, 13, 16, 7, true)
+    -- sspr(25, 49, 16, 7, main_camera.x+75, 13, 16, 7, true
+  sspr(25, 49, 16, 7, main_camera.x+camera_right_b.x, camera_right_b.y, 16, 7, true)
 
   pal()
 end
@@ -358,17 +360,26 @@ function camera_follow()
   -- move camera to the right
   -- trigger positions. 
   local right_x0, right_y0, right_y1 = 72, 12, 24
-  if mouse_x > cam_x + right_x0 and mouse_y < cam_y - right_y0 and mouse_y > cam_y - right_y1 and main_camera.x < right_map_limit then
-    if not is_camera_button_right_hover then is_camera_button_right_hover = true sfx(3)end
+  local width = 8
+  -- if mouse_x > cam_x + right_x0 and mouse_y < cam_y - right_y0 and mouse_y >
+  --  cam_y - right_y1 and main_camera.x < right_map_limit then
+  if mouse_x > cam_x + camera_right_b.x 
+  and mouse_y > camera_right_b.y - 4
+  and mouse_y < camera_right_b.y + width
+  and main_camera.x < right_map_limit then
+    if not is_camera_button_right_hover then is_camera_button_right_hover = true sfx(3) end
     main_camera.x += 1
   else
     is_camera_button_right_hover = false
   end
 
   -- move camera to the left
-  local left_x0, left_y0, left_y1 = 14, 12, 24
+  -- local left_x0, left_y0, left_y1 = 14, 12, 24
   -- if mouse_x > main_camera.x - left_x0 and mouse_y < cam_y - left_y0 and mouse_y > cam_y - left_y1 then
-  if mouse.x < cam_x - left_x0 and mouse_y < cam_y - left_y0 and mouse_y > cam_y - left_y1 and main_camera.x > left_map_limit then
+  if mouse.x < cam_x + camera_left_b.x - 38
+  and mouse_y > camera_left_b.y - 4
+  and mouse_y < camera_left_b.y + width
+  and main_camera.x > left_map_limit then
     if not is_camera_button_left_hover then is_camera_button_left_hover = true sfx(3)end
     main_camera.x -= 1
   else
@@ -408,7 +419,7 @@ function make_tower(x, y, tag, health, sprite)
    end
   end,
   take_damage=function(self, damage)
-    whiteframe=true
+    -- whiteframe=true
     self.current_health-= damage
     shake_v(0.25)
     if rnd() > 0.80 then
@@ -1599,9 +1610,9 @@ ccc1111cccc1111c0000eee00eee000000000eeeee0000000000eee00eee00000000000eeeee0000
 01c688882222610022222222000a999a999aaaaa0cccc000000000dfdd00000000000dddd00000000000dfdd000777700000077777dfdd770000000000000000
 01c68888222261002242222200a999a999a999990ccccc007000000ffd00000000000dfdd000000000000ffd0000077000077777777ffd770000000000000000
 0116888822226c00444442440a999a999a999999011110007770000000000000000000ffd0000000000000000000040000077777477777770000000000000000
-0116888822226c004444444400499949994999990000000077700eedee00000070000000000000000000edee50000400007777444eedee770000000000000000
-01c6888822226100444444440004999499944444000000007770eedddee000007770eedeee0000000000dddeed00400000777744eedddee70000000000000000
-01c168882226115044444444000044444444444000000000704000dd5dd00000777eedddee0000000000ddddd0f400000777444444dd5dd00000000000000000
+0116888822226c004444444400599959995999990000000077700eedee00000070000000000000000000edee50000400007777444eedee770000000000000000
+01c6888822226100444444440005999599955555000000007770eedddee000007770eedeee0000000000dddeed00400000777744eedddee70000000000000000
+01c168882226115044444444000055555555555000000000704000dd5dd00000777eedddee0000000000ddddd0f400000777444444dd5dd00000000000000000
 011c68882226cc570000000000000000000000000000000000400505ddd0000077700dd5d0000000000000ddd5df0000077744444575ddd00000000000000000
 011cc688226ccc57000000000000000000000000000000000004d0d0ddd000007040505dd0000000000000ddd040000007774444d4d0ddd00000000000000000
 01c116882261115000000000000b30000bbbbb30000000000004ff00555000000040ddddd000000000000055500000000777744df00055500000000000000000
