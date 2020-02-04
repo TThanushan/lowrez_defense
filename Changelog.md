@@ -7,3 +7,5 @@
 ## [c9875f](https://github.com/TThanushan/lowrez_defense/commit/c9875ff032051592a791b8a4c869caf3e6d68a9a)
 
 ![Imgur](https://i.imgur.com/hIwiYzL.gif)
+
+![Imgur](https://imgur.com/HxNkGgq.gif)
